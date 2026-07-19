@@ -523,7 +523,6 @@
     let currentDish = null;
     let activeCat = 'all';
     let searchQ = '';
-    let renderLimit = 24;
 
     const grid = document.getElementById('dishGrid');
     const CAT_ORDER = [
@@ -572,9 +571,10 @@
         grid.innerHTML = '<div class="empty"><div class="big">🍽️</div>没有找到菜品</div>';
         return;
       }
-      const show = list.slice(0, renderLimit);
+      // 一次渲染当前分类/搜索结果全部卡片，图片 loading=lazy 由浏览器按需加载，避免分页重绘闪屏
       let html = '<div class="grid">';
-      show.forEach((d) => {
+      for (let i = 0; i < list.length; i++) {
+        const d = list[i];
         const qty = cart[d.id]?.qty || 0;
         const hasImg = !!d.img;
         html += `<article class="card">
@@ -594,28 +594,10 @@
             </div>
           </div>
         </article>`;
-      });
-      if (list.length > renderLimit) {
-        html += `<div class="more-tip">已显示 ${renderLimit}/${list.length} 道 · 下滑加载更多 · 或用搜索缩小范围</div>`;
       }
       html += '</div>';
       grid.innerHTML = html;
     }
-
-    // infinite load
-    let ticking = false;
-    window.addEventListener('scroll', () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        const nearBottom = window.innerHeight + window.scrollY > document.body.offsetHeight - 400;
-        if (nearBottom && renderLimit < filteredList().length) {
-          renderLimit += 24;
-          renderDishes();
-        }
-        ticking = false;
-      });
-    }, { passive: true });
 
     document.getElementById('categoryNav').addEventListener('click', (e) => {
       const btn = e.target.closest('button[data-cat]');
@@ -623,15 +605,16 @@
       document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       activeCat = btn.dataset.cat;
-      renderLimit = 24;
       window.scrollTo({ top: 0, behavior: 'smooth' });
       renderDishes();
     });
 
+    // 搜索防抖，避免每敲一字整表重绘闪一下
+    let searchTimer = null;
     document.getElementById('searchInput').addEventListener('input', (e) => {
       searchQ = e.target.value || '';
-      renderLimit = 48;
-      renderDishes();
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => renderDishes(), 180);
     });
 
     async function openDetail(id) {
@@ -697,8 +680,29 @@
       saveCart();
       updateCartUI();
       showToast('已加入「' + d.name + '」');
-      // 轻量刷新角标：不重绘整表
-      renderDishes();
+      // 只更新该卡片角标，避免整表重绘闪屏
+      updateCardQtyBadge(id);
+    }
+
+    function updateCardQtyBadge(id) {
+      const qty = cart[id]?.qty || 0;
+      // 找到对应卡片：通过 onclick 里的 id 匹配
+      const cards = grid.querySelectorAll('.card');
+      cards.forEach((card) => {
+        const imgBox = card.querySelector('.card-img');
+        if (!imgBox || imgBox.getAttribute('onclick') !== "openDetail('" + id + "')") return;
+        let badge = imgBox.querySelector('.qty-badge');
+        if (qty > 0) {
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'qty-badge';
+            imgBox.appendChild(badge);
+          }
+          badge.textContent = qty;
+        } else if (badge) {
+          badge.remove();
+        }
+      });
     }
 
     function addFromDetail() {
@@ -723,14 +727,15 @@
       if (cart[id].qty <= 0) delete cart[id];
       saveCart();
       updateCartUI();
-      renderDishes();
+      updateCardQtyBadge(id);
     }
 
     function clearCart() {
       cart = {};
       saveCart();
       updateCartUI();
-      renderDishes();
+      // 清掉所有角标，不整表重绘
+      grid.querySelectorAll('.qty-badge').forEach((b) => b.remove());
       showToast('购物车已清空');
     }
 
@@ -818,7 +823,7 @@
       saveCart();
       updateCartUI();
       closeCart();
-      renderDishes();
+      grid.querySelectorAll('.qty-badge').forEach((b) => b.remove());
       if (navigator.vibrate) navigator.vibrate(40);
     }
 
