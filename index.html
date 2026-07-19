@@ -766,14 +766,17 @@
       return /^https?:\/\//i.test(u || '');
     }
 
+    // 公网地址（GitHub Pages）——随时随地可扫
+    const PUBLIC_MENU_URL = 'https://loopbearconsole.github.io/family-menu/';
+
     function resolveQRUrl() {
       const saved = (localStorage.getItem('home_menu_public_url') || '').trim();
       if (isHttpUrl(saved)) return saved;
+      // 在线打开时用当前页；本地 file:// 时默认用已部署的公网地址
       if (isHttpUrl(location.href) && location.protocol !== 'file:') {
-        // 去掉 hash，保留可分享的干净地址
         return location.href.split('#')[0];
       }
-      return '';
+      return PUBLIC_MENU_URL;
     }
 
     function renderQR(url) {
