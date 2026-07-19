@@ -476,9 +476,13 @@
       return pathname + '/';
     })();
 
+    // 个别菜单独换过图文件名，避免 CDN 缓存旧图
+    const IMG_FILE = { d38: 'd38b', d40: 'd40b', d41: 'd41b' };
+
     function imgOf(id) {
+      const file = IMG_FILE[id] || id;
       // 加版本参数：换图后强制刷新缓存
-      return `${ASSET_BASE}images/${id}.jpg?v=20260719b`;
+      return `${ASSET_BASE}images/${file}.jpg?v=3`;
     }
 
     let cart = JSON.parse(localStorage.getItem('home_menu_cart') || '{}');
@@ -511,7 +515,7 @@
           <div class="relative h-36 sm:h-40 overflow-hidden img-ph" onclick="openDetail('${d.id}')">
             <img src="${imgOf(d.id)}" alt="${d.name}" class="w-full h-full object-cover"
               loading="lazy" decoding="async"
-              onerror="this.onerror=null;this.src='${ASSET_BASE}images/${d.id}.jpg';this.style.opacity=1" />
+              onerror="this.onerror=null;this.src='${imgOf(d.id).split('?')[0]}';this.style.opacity=1" />
             <span class="absolute top-2 left-2 text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/90 shadow text-orange-700">${d.catLabel}</span>
             ${qty ? `<span class="absolute top-2 right-2 min-w-[22px] h-[22px] px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">${qty}</span>` : ''}
           </div>
@@ -551,7 +555,8 @@
       img.alt = d.name;
       img.onerror = function () {
         this.onerror = null;
-        this.src = ASSET_BASE + 'images/' + d.id + '.jpg';
+        const file = IMG_FILE[d.id] || d.id;
+        this.src = ASSET_BASE + 'images/' + file + '.jpg';
       };
       document.getElementById('dName').textContent = d.name;
       document.getElementById('dCat').textContent = d.catLabel;
