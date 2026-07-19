@@ -463,11 +463,13 @@
     // 图片：写死绝对地址，避免手机路径解析错误；多源回退（国内访问 GitHub 不稳定）
     const IMG_FILE = { d38: 'd38b', d40: 'd40b', d41: 'd41b' };
     const IMG_VER = 'v6';
-    // 固定到已推送的 commit，避免 @main 被 CDN 缓存旧文件
+    // 固定到已推送的 commit（含压缩菜图），多 CDN 回退，国内优先镜像
     const IMG_REF = '4afe10c';
     const IMG_HOSTS = [
+      'https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@' + IMG_REF + '/images/',
       'https://cdn.jsdelivr.net/gh/LoopBearConsole/family-menu@' + IMG_REF + '/images/',
       'https://fastly.jsdelivr.net/gh/LoopBearConsole/family-menu@' + IMG_REF + '/images/',
+      'https://gcore.jsdelivr.net/gh/LoopBearConsole/family-menu@' + IMG_REF + '/images/',
       'https://loopbearconsole.github.io/family-menu/images/',
       'https://raw.githubusercontent.com/LoopBearConsole/family-menu/' + IMG_REF + '/images/'
     ];
