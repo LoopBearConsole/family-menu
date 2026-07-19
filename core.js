@@ -7,11 +7,17 @@ function assetBase(kind) {
   // kind: 'images' | 'thumbs' | 'details'
   try {
     if (typeof location === 'undefined' || location.protocol === 'file:') return kind + '/';
-    if (location.hostname && location.hostname.endsWith('github.io')) {
+    const host = location.hostname || '';
+    // 国内 jsDelivr 镜像打开 HTML 时，资源也走镜像
+    if (/jsdmirror|jsdelivr|gcore\.jsdelivr|fastly\.jsdelivr/i.test(host)) {
+      return 'https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/' + kind + '/';
+    }
+    if (host.endsWith('github.io')) {
       const segs = location.pathname.split('/').filter(Boolean);
       const repo = segs[0] || 'family-menu';
       return '/' + repo + '/' + kind + '/';
     }
+    // Cloudflare Pages / 其它静态托管：同源相对路径
     const p = location.pathname || '/';
     const dir = p.endsWith('/') ? p : p.replace(/[^/]+$/, '');
     return dir + kind + '/';

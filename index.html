@@ -823,15 +823,22 @@
       setTimeout(() => { t.innerHTML = ''; }, 1600);
     }
 
-    // QR —— 优先当前域名（部署后自动变快站）
+    // 国内推荐入口：jsDelivr 镜像（比 github.io 快很多）
+    // 海外/原站仍可用 github pages
+    const CN_FAST_BASE = 'https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/';
+    const GH_BASE = 'https://loopbearconsole.github.io/family-menu/';
     const PUBLIC_BASE = (function () {
-      if (location.protocol === 'file:') return 'https://loopbearconsole.github.io/family-menu/';
+      if (location.protocol === 'file:') return CN_FAST_BASE;
+      const host = location.hostname || '';
+      if (/jsdmirror|jsdelivr/i.test(host)) return CN_FAST_BASE;
+      if (host.endsWith('github.io')) return GH_BASE;
       const p = location.pathname.replace(/\/index\.html?$/, '/');
       const base = location.origin + (p.endsWith('/') ? p : p.replace(/[^/]+$/, ''));
       return base.endsWith('/') ? base : base + '/';
     })();
-    const LIVING_URL = PUBLIC_BASE;
-    const KITCHEN_URL = PUBLIC_BASE + 'kitchen.html';
+    // 二维码固定打国内加速入口，家人扫码更快
+    const LIVING_URL = CN_FAST_BASE + 'index.html';
+    const KITCHEN_URL = CN_FAST_BASE + 'kitchen.html';
 
     function makeQR(elId, url, labelId) {
       const box = document.getElementById(elId);

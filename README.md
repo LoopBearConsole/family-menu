@@ -2,23 +2,27 @@
 
 纯静态家常菜点菜页：点开看详情、加购物车、一键下单。适合手机扫码放在厨房。
 
-**客厅点餐：** https://loopbearconsole.github.io/family-menu/  
+## 访问地址（推荐国内加速）
 
-**厨房看板：** https://loopbearconsole.github.io/family-menu/kitchen.html  
+| 用途 | 地址 |
+|------|------|
+| **客厅点餐（国内快）** | https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/index.html |
+| **厨房看板（国内快）** | https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/kitchen.html |
+| GitHub Pages 备用 | https://loopbearconsole.github.io/family-menu/ |
+
+页面底部二维码默认指向 **国内加速入口**。
 
 菜谱来源：[Anduin2017/HowToCook](https://github.com/Anduin2017/HowToCook)（MIT）
 
-- 约 350+ 道菜，含食材与分步做法  
-- 客厅扫码选菜、加购物车、一键下单  
-- 订单自动同步到厨房看板  
-- 厨房点开菜名看制作步骤  
-
-重新导入菜谱：
+### 极速版优化
+- 首屏只加载约 80KB 轻量菜谱（不再一次拉 900KB）
+- 列表用缩略图；点开详情再加载步骤
+- 去掉 Tailwind CDN、Google 字体
+- 首屏只渲染 24 道菜，下滑再加载
 
 ```bash
-# 需已 clone HowToCook 到 D:\Grok\HowToCook
-node import-howtocook.js D:\Grok\HowToCook
-git add -A && git commit -m "更新 HowToCook 菜谱" && git push
+node build-fast.js   # 重新生成 lite/thumbs/details
+git add -A && git commit -m "更新" && git push
 ```
 
 ## 怎么用
