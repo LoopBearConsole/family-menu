@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>家里的菜单</title>
+  <title>老刘小炒</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -119,8 +119,8 @@
     <div class="absolute inset-0 opacity-10"
       style="background-image:radial-gradient(circle at 20% 30%,#fff 1px,transparent 1px),radial-gradient(circle at 80% 70%,#fff 1px,transparent 1px);background-size:28px 28px;"></div>
     <div class="relative max-w-5xl mx-auto px-5 pt-12 pb-16 sm:pt-16 sm:pb-20 text-center">
-      <p class="text-orange-100/90 text-xs tracking-[0.25em] mb-3 font-medium">HOME KITCHEN · 家常味道</p>
-      <h1 class="font-display text-4xl sm:text-5xl md:text-6xl font-bold tracking-wide mb-3">家里的菜单</h1>
+      <p class="text-orange-100/90 text-xs tracking-[0.25em] mb-3 font-medium">LAO LIU · 家常小炒</p>
+      <h1 class="font-display text-4xl sm:text-5xl md:text-6xl font-bold tracking-wide mb-3">老刘小炒</h1>
       <p class="text-orange-50/90 text-sm sm:text-base max-w-md mx-auto leading-relaxed">
         点开看做法 · 加入购物车 · 一键下单喊做饭
       </p>
@@ -288,7 +288,7 @@
     </div>
   </section>
   <footer class="bg-stone-950 text-stone-500 text-center py-5 text-sm">
-    <p>家里的菜单 · 家的味道 · 2026</p>
+    <p>老刘小炒 · 家的味道 · 2026</p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
@@ -460,9 +460,25 @@
         tip:'冬瓜后放，炖 20–30 分钟即可，避免过烂。' }
     ];
 
-    // 本地图片；缺失时用同色占位
+    // 资源路径：GitHub Pages 项目站必须带 /family-menu/ 前缀
+    // 否则手机扫码打开无尾斜杠时，相对路径 images/xxx 会指到错误地址导致全无图
+    const ASSET_BASE = (() => {
+      const { protocol, hostname, pathname } = location;
+      if (protocol === 'file:') return '';
+      if (hostname.endsWith('github.io')) {
+        const segs = pathname.split('/').filter(Boolean);
+        // /family-menu 或 /family-menu/ 或 /family-menu/index.html
+        if (segs.length >= 1) return '/' + segs[0] + '/';
+      }
+      // 其他托管：取当前目录
+      if (pathname.endsWith('/')) return pathname;
+      if (pathname.endsWith('.html')) return pathname.replace(/[^/]+$/, '');
+      return pathname + '/';
+    })();
+
     function imgOf(id) {
-      return `images/${id}.jpg`;
+      // 加版本参数：换图后强制刷新缓存
+      return `${ASSET_BASE}images/${id}.jpg?v=20260719b`;
     }
 
     let cart = JSON.parse(localStorage.getItem('home_menu_cart') || '{}');
@@ -494,7 +510,8 @@
         card.innerHTML = `
           <div class="relative h-36 sm:h-40 overflow-hidden img-ph" onclick="openDetail('${d.id}')">
             <img src="${imgOf(d.id)}" alt="${d.name}" class="w-full h-full object-cover"
-              loading="lazy" onerror="this.style.opacity=0" />
+              loading="lazy" decoding="async"
+              onerror="this.onerror=null;this.src='${ASSET_BASE}images/${d.id}.jpg';this.style.opacity=1" />
             <span class="absolute top-2 left-2 text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/90 shadow text-orange-700">${d.catLabel}</span>
             ${qty ? `<span class="absolute top-2 right-2 min-w-[22px] h-[22px] px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">${qty}</span>` : ''}
           </div>
@@ -529,9 +546,13 @@
       if (!d) return;
       currentDish = d;
       const img = document.getElementById('dImg');
+      img.style.opacity = '1';
       img.src = imgOf(d.id);
       img.alt = d.name;
-      img.onerror = function () { this.style.opacity = '0.3'; };
+      img.onerror = function () {
+        this.onerror = null;
+        this.src = ASSET_BASE + 'images/' + d.id + '.jpg';
+      };
       document.getElementById('dName').textContent = d.name;
       document.getElementById('dCat').textContent = d.catLabel;
       document.getElementById('dTime').textContent = `约 ${d.time} 分钟`;

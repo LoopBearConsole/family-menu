@@ -1,6 +1,8 @@
-# 家里的菜单
+# 老刘小炒
 
 纯静态家常菜点菜页：点开看详情、加购物车、一键下单。适合手机扫码放在厨房。
+
+**在线地址：** https://loopbearconsole.github.io/family-menu/
 
 ## 怎么用
 
