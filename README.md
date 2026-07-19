@@ -2,7 +2,13 @@
 
 纯静态家常菜点菜页：点开看详情、加购物车、一键下单。适合手机扫码放在厨房。
 
-**在线地址：** https://loopbearconsole.github.io/family-menu/
+**客厅点餐：** https://loopbearconsole.github.io/family-menu/  
+
+**厨房看板：** https://loopbearconsole.github.io/family-menu/kitchen.html  
+
+- 客厅扫码选菜、加购物车、一键下单  
+- 订单自动同步到厨房看板  
+- 厨房点开某道菜可看食材与制作步骤
 
 ## 怎么用
 
