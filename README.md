@@ -2,28 +2,26 @@
 
 纯静态家常菜点菜页：点开看详情、加购物车、一键下单。适合手机扫码放在厨房。
 
-## 访问地址（推荐国内加速）
+## 正确打开方式（重要）
 
 | 用途 | 地址 |
 |------|------|
-| **客厅点餐（国内快）** | https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/index.html |
-| **厨房看板（国内快）** | https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/kitchen.html |
-| GitHub Pages 备用 | https://loopbearconsole.github.io/family-menu/ |
+| **客厅点餐** | https://loopbearconsole.github.io/family-menu/ |
+| **厨房看板** | https://loopbearconsole.github.io/family-menu/kitchen.html |
 
-页面底部二维码默认指向 **国内加速入口**。
+> 不要用 `cdn.jsdmirror.com/.../index.html` 当网址打开——  
+> 镜像会把 HTML 当**纯文本**返回，浏览器会显示源码，不是网页。
+
+图片 / 脚本会自动走国内 CDN（jsdmirror），入口网页用 GitHub Pages 渲染。
 
 菜谱来源：[Anduin2017/HowToCook](https://github.com/Anduin2017/HowToCook)（MIT）
 
 ### 极速版优化
-- 首屏只加载约 80KB 轻量菜谱（不再一次拉 900KB）
-- 列表用缩略图；点开详情再加载步骤
-- 去掉 Tailwind CDN、Google 字体
-- 首屏只渲染 24 道菜，下滑再加载
+- 首屏轻量菜谱约 80KB；详情按需加载
+- 列表缩略图 + 懒加载
+- 去掉 Tailwind / Google 字体
+- 首屏 24 道，下滑再加载
 
-```bash
-node build-fast.js   # 重新生成 lite/thumbs/details
-git add -A && git commit -m "更新" && git push
-```
 
 ## 怎么用
 

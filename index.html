@@ -504,10 +504,10 @@
   </section>
   <footer class="foot">老刘小炒 · 菜谱来自 HowToCook · 极速版</footer>
 
-  <!-- 二维码库走国内镜像；失败则跳过二维码不影响点菜 -->
+  <!-- 脚本：国内 CDN 优先（HTML 本身必须用 github.io 打开，CDN 会当纯文本显示源码） -->
   <script src="https://cdn.jsdmirror.com/npm/qrcodejs@1.0.0/qrcode.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js'"></script>
-  <script src="core.js"></script>
-  <script src="dishes-lite.js"></script>
+  <script src="https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/core.js" onerror="this.onerror=null;this.src='core.js'"></script>
+  <script src="https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/dishes-lite.js" onerror="this.onerror=null;this.src='dishes-lite.js'"></script>
   <script>
     const dishes = DISHES_LITE;
     let cart = JSON.parse(localStorage.getItem('home_menu_cart') || '{}');
@@ -823,22 +823,11 @@
       setTimeout(() => { t.innerHTML = ''; }, 1600);
     }
 
-    // 国内推荐入口：jsDelivr 镜像（比 github.io 快很多）
-    // 海外/原站仍可用 github pages
-    const CN_FAST_BASE = 'https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/';
+    // 注意：jsDelivr/jsdmirror 打开 .html 会显示源码（Content-Type 是 text/plain）
+    // 入口必须用 GitHub Pages；图片/脚本已走国内 CDN
     const GH_BASE = 'https://loopbearconsole.github.io/family-menu/';
-    const PUBLIC_BASE = (function () {
-      if (location.protocol === 'file:') return CN_FAST_BASE;
-      const host = location.hostname || '';
-      if (/jsdmirror|jsdelivr/i.test(host)) return CN_FAST_BASE;
-      if (host.endsWith('github.io')) return GH_BASE;
-      const p = location.pathname.replace(/\/index\.html?$/, '/');
-      const base = location.origin + (p.endsWith('/') ? p : p.replace(/[^/]+$/, ''));
-      return base.endsWith('/') ? base : base + '/';
-    })();
-    // 二维码固定打国内加速入口，家人扫码更快
-    const LIVING_URL = CN_FAST_BASE + 'index.html';
-    const KITCHEN_URL = CN_FAST_BASE + 'kitchen.html';
+    const LIVING_URL = GH_BASE;
+    const KITCHEN_URL = GH_BASE + 'kitchen.html';
 
     function makeQR(elId, url, labelId) {
       const box = document.getElementById(elId);
