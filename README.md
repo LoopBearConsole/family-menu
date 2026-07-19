@@ -6,9 +6,20 @@
 
 **厨房看板：** https://loopbearconsole.github.io/family-menu/kitchen.html  
 
+菜谱来源：[Anduin2017/HowToCook](https://github.com/Anduin2017/HowToCook)（MIT）
+
+- 约 350+ 道菜，含食材与分步做法  
 - 客厅扫码选菜、加购物车、一键下单  
 - 订单自动同步到厨房看板  
-- 厨房点开某道菜可看食材与制作步骤
+- 厨房点开菜名看制作步骤  
+
+重新导入菜谱：
+
+```bash
+# 需已 clone HowToCook 到 D:\Grok\HowToCook
+node import-howtocook.js D:\Grok\HowToCook
+git add -A && git commit -m "更新 HowToCook 菜谱" && git push
+```
 
 ## 怎么用
 

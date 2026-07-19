@@ -125,9 +125,9 @@
         点开看做法 · 加入购物车 · 一键下单喊做饭
       </p>
       <div class="mt-6 flex flex-wrap justify-center gap-2 text-xs">
-        <span class="bg-white/15 backdrop-blur px-3 py-1.5 rounded-full">41 道家常菜</span>
-        <span class="bg-white/15 backdrop-blur px-3 py-1.5 rounded-full">无需下载 App</span>
-        <span class="bg-white/15 backdrop-blur px-3 py-1.5 rounded-full">适合全家点菜</span>
+        <span class="bg-white/15 backdrop-blur px-3 py-1.5 rounded-full" id="dishCountBadge">HowToCook 菜谱</span>
+        <span class="bg-white/15 backdrop-blur px-3 py-1.5 rounded-full">含详细步骤</span>
+        <span class="bg-white/15 backdrop-blur px-3 py-1.5 rounded-full">客厅点 · 厨房做</span>
       </div>
     </div>
     <svg class="absolute bottom-0 w-full h-8 text-[#faf6f1]" viewBox="0 0 1440 48" preserveAspectRatio="none" fill="currentColor">
@@ -135,20 +135,14 @@
     </svg>
   </header>
 
-  <!-- 分类 -->
+  <!-- 搜索 + 分类 -->
   <nav class="sticky top-0 z-30 bg-[#faf6f1]/90 backdrop-blur-md border-b border-orange-100/80">
+    <div class="max-w-5xl mx-auto px-3 pt-3">
+      <input id="searchInput" type="search" placeholder="搜索菜名，如 红烧肉、番茄…"
+        class="w-full rounded-xl border border-orange-200 bg-white px-4 py-2.5 text-sm text-stone-700 placeholder:text-stone-400 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
+    </div>
     <div class="max-w-5xl mx-auto px-3 py-3 overflow-x-auto">
-      <div class="flex gap-2 min-w-max" id="categoryNav">
-        <button class="cat-btn active px-4 py-2 rounded-full text-sm font-medium border border-orange-200 bg-white text-stone-600" data-cat="all">全部</button>
-        <button class="cat-btn px-4 py-2 rounded-full text-sm font-medium border border-orange-200 bg-white text-stone-600" data-cat="pork">猪肉</button>
-        <button class="cat-btn px-4 py-2 rounded-full text-sm font-medium border border-orange-200 bg-white text-stone-600" data-cat="chicken">鸡肉</button>
-        <button class="cat-btn px-4 py-2 rounded-full text-sm font-medium border border-orange-200 bg-white text-stone-600" data-cat="beef">牛肉</button>
-        <button class="cat-btn px-4 py-2 rounded-full text-sm font-medium border border-orange-200 bg-white text-stone-600" data-cat="seafood">鱼虾</button>
-        <button class="cat-btn px-4 py-2 rounded-full text-sm font-medium border border-orange-200 bg-white text-stone-600" data-cat="tofu">豆腐</button>
-        <button class="cat-btn px-4 py-2 rounded-full text-sm font-medium border border-orange-200 bg-white text-stone-600" data-cat="egg">鸡蛋</button>
-        <button class="cat-btn px-4 py-2 rounded-full text-sm font-medium border border-orange-200 bg-white text-stone-600" data-cat="veggie">蔬菜</button>
-        <button class="cat-btn px-4 py-2 rounded-full text-sm font-medium border border-orange-200 bg-white text-stone-600" data-cat="soup">汤羹</button>
-      </div>
+      <div class="flex gap-2 min-w-max" id="categoryNav"></div>
     </div>
   </nav>
 
@@ -226,6 +220,10 @@
             <div id="dIngredients" class="flex flex-wrap gap-1.5"></div>
           </div>
           <div>
+            <p class="text-xs font-semibold text-orange-700 mb-1.5">制作步骤</p>
+            <ol id="dSteps" class="space-y-2"></ol>
+          </div>
+          <div>
             <p class="text-xs font-semibold text-orange-700 mb-1.5">小贴士</p>
             <p id="dTip" class="text-sm text-stone-600 leading-relaxed"></p>
           </div>
@@ -298,55 +296,104 @@
     </div>
   </section>
   <footer class="bg-stone-950 text-stone-500 text-center py-5 text-sm">
-    <p>老刘小炒 · 家的味道 · 2026</p>
+    <p>老刘小炒 · 菜谱来自 HowToCook · 2026</p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script src="shared.js"></script>
   <script>
     const dishes = DISHES;
-
     // 图片与同步见 shared.js（imgOf / pushKitchenOrder）
 
-        let cart = JSON.parse(localStorage.getItem('home_menu_cart') || '{}');
+    let cart = JSON.parse(localStorage.getItem('home_menu_cart') || '{}');
     let currentDish = null;
     let activeCat = 'all';
+    let searchQ = '';
 
     const grid = document.getElementById('dishGrid');
+    const CAT_ORDER = [
+      ['all', '全部'],
+      ['meat', '荤菜'],
+      ['veggie', '素菜'],
+      ['aquatic', '水产'],
+      ['staple', '主食'],
+      ['soup', '汤羹'],
+      ['breakfast', '早餐'],
+      ['dessert', '甜品'],
+      ['drink', '饮品'],
+      ['semi', '半成品']
+    ];
 
     function spiceHtml(n) {
+      if (!n) return '';
       let h = '';
       for (let i = 1; i <= 3; i++) h += `<span class="spice-dot ${i <= n ? 'on' : ''}"></span>`;
-      return h || '<span class="text-xs text-stone-400">不辣</span>';
+      return h;
     }
 
-    function renderDishes(cat) {
-      activeCat = cat;
-      const list = cat === 'all' ? dishes : dishes.filter(d => d.cat === cat);
+    function difficultyHtml(n) {
+      if (!n) return '';
+      return '★'.repeat(Math.min(n, 5));
+    }
+
+    function buildCategoryNav() {
+      const nav = document.getElementById('categoryNav');
+      const present = new Set(dishes.map(d => d.cat));
+      nav.innerHTML = CAT_ORDER
+        .filter(([id]) => id === 'all' || present.has(id))
+        .map(([id, label], i) => {
+          const count = id === 'all' ? dishes.length : dishes.filter(d => d.cat === id).length;
+          const active = id === activeCat ? 'active' : '';
+          return `<button class="cat-btn ${active} px-4 py-2 rounded-full text-sm font-medium border border-orange-200 bg-white text-stone-600" data-cat="${id}">${label} ${count}</button>`;
+        }).join('');
+      const badge = document.getElementById('dishCountBadge');
+      if (badge) badge.textContent = dishes.length + ' 道菜谱 · HowToCook';
+    }
+
+    function filteredList() {
+      let list = activeCat === 'all' ? dishes.slice() : dishes.filter(d => d.cat === activeCat);
+      if (searchQ) {
+        const q = searchQ.trim().toLowerCase();
+        list = list.filter(d =>
+          d.name.toLowerCase().includes(q) ||
+          (d.tagline && d.tagline.toLowerCase().includes(q)) ||
+          (d.ingredients || []).some(x => String(x).toLowerCase().includes(q))
+        );
+      }
+      return list;
+    }
+
+    function renderDishes() {
+      const list = filteredList();
       if (!list.length) {
-        grid.innerHTML = '<div class="text-center py-20 text-stone-400"><p class="text-5xl mb-3">🍽️</p><p>暂无此类菜品</p></div>';
+        grid.innerHTML = '<div class="text-center py-20 text-stone-400"><p class="text-5xl mb-3">🍽️</p><p>没有找到菜品，换个词试试</p></div>';
         return;
       }
       const wrap = document.createElement('div');
       wrap.className = 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4';
-      list.forEach((d, i) => {
+      // 首屏只渲染前 80 道，滚动再加载其余，避免 300+ 卡片卡顿
+      const LIMIT = 120;
+      const show = list.slice(0, LIMIT);
+      show.forEach((d, i) => {
         const qty = cart[d.id]?.qty || 0;
+        const hasImg = !!d.img;
         const card = document.createElement('article');
         card.className = 'dish-card bg-white rounded-2xl overflow-hidden shadow-sm border border-orange-50 fade-up';
         card.style.animationDelay = `${Math.min(i, 12) * 0.03}s`;
         card.innerHTML = `
           <div class="relative h-36 sm:h-40 overflow-hidden img-ph" onclick="openDetail('${d.id}')">
-            <img src="${imgOf(d.id)}" alt="${d.name}" class="w-full h-full object-cover"
-              decoding="async" referrerpolicy="no-referrer"
-              onerror="onImgError(this,'${d.id}')" />
+            ${hasImg
+              ? `<img src="${imgOf(d.id)}" alt="${d.name}" class="w-full h-full object-cover" decoding="async" referrerpolicy="no-referrer" onerror="onImgError(this,'${d.id}')" />`
+              : `<div class="img-fallback absolute inset-0 flex items-center justify-center text-white/90 font-display text-4xl font-bold">${d.name.slice(0, 1)}</div>`
+            }
             <span class="absolute top-2 left-2 text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/90 shadow text-orange-700">${d.catLabel}</span>
             ${qty ? `<span class="absolute top-2 right-2 min-w-[22px] h-[22px] px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">${qty}</span>` : ''}
           </div>
           <div class="p-3">
             <h3 class="font-display font-bold text-stone-800 text-sm sm:text-base truncate">${d.name}</h3>
-            <p class="text-[11px] text-stone-400 mt-0.5 truncate">${d.tagline}</p>
+            <p class="text-[11px] text-stone-400 mt-0.5 truncate">${d.tagline || ''}</p>
             <div class="flex items-center justify-between mt-2.5">
-              <span class="text-[11px] text-stone-400">约 ${d.time} 分钟</span>
+              <span class="text-[11px] text-stone-400">约 ${d.time} 分钟${d.difficulty ? ' · ' + difficultyHtml(d.difficulty) : ''}</span>
               <button type="button" onclick="event.stopPropagation(); quickAdd('${d.id}')"
                 class="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center text-lg font-bold shadow hover:bg-orange-600 active:scale-90 transition"
                 aria-label="加入${d.name}">+</button>
@@ -354,6 +401,12 @@
           </div>`;
         wrap.appendChild(card);
       });
+      if (list.length > LIMIT) {
+        const more = document.createElement('p');
+        more.className = 'col-span-full text-center text-xs text-stone-400 py-2';
+        more.textContent = `已显示前 ${LIMIT} 道，共 ${list.length} 道。可用搜索缩小范围`;
+        wrap.appendChild(more);
+      }
       grid.innerHTML = '';
       grid.appendChild(wrap);
     }
@@ -363,10 +416,14 @@
       if (!btn) return;
       document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      renderDishes(btn.dataset.cat);
+      activeCat = btn.dataset.cat;
+      renderDishes();
     });
 
-    function findDish(id) { return dishes.find(d => d.id === id); }
+    document.getElementById('searchInput').addEventListener('input', e => {
+      searchQ = e.target.value || '';
+      renderDishes();
+    });
 
     function openDetail(id) {
       const d = findDish(id);
@@ -379,14 +436,27 @@
       img.alt = d.name;
       img.referrerPolicy = 'no-referrer';
       img.onerror = function () { onImgError(this, d.id); };
-      img.src = imgOf(d.id);
+      if (d.img) {
+        img.src = imgOf(d.id);
+      } else {
+        img.removeAttribute('src');
+        img.style.display = 'none';
+      }
       document.getElementById('dName').textContent = d.name;
       document.getElementById('dCat').textContent = d.catLabel;
       document.getElementById('dTime').textContent = `约 ${d.time} 分钟`;
-      document.getElementById('dTagline').textContent = d.tagline;
-      document.getElementById('dDesc').textContent = d.desc;
-      document.getElementById('dTip').textContent = d.tip;
-      document.getElementById('dSpice').innerHTML = spiceHtml(d.spice);
+      document.getElementById('dTagline').textContent = d.tagline || '';
+      document.getElementById('dDesc').textContent = d.desc || '';
+      document.getElementById('dTip').textContent = d.tip || '';
+      document.getElementById('dSpice').innerHTML = d.difficulty
+        ? `<span class="text-xs text-amber-600 font-medium">${difficultyHtml(d.difficulty)}</span>`
+        : spiceHtml(d.spice);
+      const steps = dishSteps(d);
+      document.getElementById('dSteps').innerHTML = steps.map((s, i) => `
+        <li class="flex gap-2 text-sm text-stone-700 leading-relaxed">
+          <span class="shrink-0 w-5 h-5 rounded-full bg-orange-500 text-white text-[10px] font-bold flex items-center justify-center">${i + 1}</span>
+          <span>${s}</span>
+        </li>`).join('') || '<li class="text-sm text-stone-400">暂无分步</li>';
       document.getElementById('dIngredients').innerHTML = d.ingredients
         .map(x => `<span class="px-2.5 py-1 rounded-lg bg-white text-xs text-stone-600 border border-orange-100">${x}</span>`).join('');
       document.getElementById('detailMask').classList.add('open');
@@ -439,14 +509,14 @@
       if (cart[id].qty <= 0) delete cart[id];
       saveCart();
       updateCartUI();
-      renderDishes(activeCat);
+      renderDishes();
     }
 
     function clearCart() {
       cart = {};
       saveCart();
       updateCartUI();
-      renderDishes(activeCat);
+      renderDishes();
       showToast('购物车已清空');
     }
 
@@ -573,7 +643,7 @@
       saveCart();
       updateCartUI();
       closeCart();
-      renderDishes(activeCat);
+      renderDishes();
       renderHistory();
 
       if (navigator.vibrate) navigator.vibrate(40);
@@ -648,7 +718,8 @@
     }
 
     // init
-    renderDishes('all');
+    buildCategoryNav();
+    renderDishes();
     updateCartUI();
     renderHistory();
     makeQR('qrcodeLiving', LIVING_URL, 'qrLivingLabel');
