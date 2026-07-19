@@ -373,6 +373,10 @@
     .qr-card p { font-size: 11px; color: #a8a29e; margin-bottom: 12px; }
     .qr-box { display: inline-block; background: #fff; padding: 10px; border-radius: 12px; }
     .qr-url { font-size: 10px; color: #78716c; margin-top: 10px; word-break: break-all; }
+    .copy-link {
+      margin-top: 10px; border: 1px solid #57534e; background: transparent;
+      color: #fdba74; border-radius: 999px; padding: 6px 14px; font-size: 12px; cursor: pointer;
+    }
     .foot { background: #0c0a09; color: #78716c; text-align: center; padding: 16px; font-size: 12px; }
 
     .loading-bar {
@@ -491,37 +495,43 @@
     <p class="hint">客厅点菜下单 · 厨房自动收到 · 点开看做法</p>
     <div class="qr-grid">
       <div class="qr-card">
-        <div class="lab o">客厅</div>
+        <div class="lab o">客厅 · 新码 v4</div>
         <h3>点餐码</h3>
         <p>贴在客厅 / 餐桌 · 扫码打开菜单</p>
         <div class="qr-box">
-          <!-- 静态二维码，写死 github.io，避免扫到 CDN 源码页 -->
-          <img src="qr/living.png" width="150" height="150" alt="客厅点餐二维码"
-            style="display:block;width:150px;height:150px"
-            onerror="this.onerror=null;this.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https%3A%2F%2Floopbearconsole.github.io%2Ffamily-menu%2F'" />
+          <!-- 绝对路径 + 版本号，防止浏览器/CDN 缓存旧二维码图 -->
+          <img id="qrLivingImg" width="160" height="160" alt="客厅点餐二维码"
+            style="display:block;width:160px;height:160px;background:#fff"
+            src="https://loopbearconsole.github.io/family-menu/qr/living.png?v=4"
+            onerror="this.onerror=null;this.src='https://api.qrserver.com/v1/create-qr-code/?size=160x160&ecc=H&data=https%3A%2F%2Floopbearconsole.github.io%2Ffamily-menu%2F%3Fv%3D4'" />
         </div>
-        <div class="qr-url">https://loopbearconsole.github.io/family-menu/</div>
+        <div class="qr-url" id="qrLivingLabel">https://loopbearconsole.github.io/family-menu/?v=4</div>
+        <button type="button" class="copy-link" onclick="copyLink('https://loopbearconsole.github.io/family-menu/?v=4')">复制链接</button>
       </div>
       <div class="qr-card">
-        <div class="lab g">厨房</div>
+        <div class="lab g">厨房 · 新码 v4</div>
         <h3>看板码</h3>
         <p>贴在厨房 · 看订单和做法</p>
         <div class="qr-box">
-          <img src="qr/kitchen.png" width="150" height="150" alt="厨房看板二维码"
-            style="display:block;width:150px;height:150px"
-            onerror="this.onerror=null;this.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https%3A%2F%2Floopbearconsole.github.io%2Ffamily-menu%2Fkitchen.html'" />
+          <img id="qrKitchenImg" width="160" height="160" alt="厨房看板二维码"
+            style="display:block;width:160px;height:160px;background:#fff"
+            src="https://loopbearconsole.github.io/family-menu/qr/kitchen.png?v=4"
+            onerror="this.onerror=null;this.src='https://api.qrserver.com/v1/create-qr-code/?size=160x160&ecc=H&data=https%3A%2F%2Floopbearconsole.github.io%2Ffamily-menu%2Fkitchen.html%3Fv%3D4'" />
         </div>
-        <div class="qr-url">https://loopbearconsole.github.io/family-menu/kitchen.html</div>
+        <div class="qr-url" id="qrKitchenLabel">https://loopbearconsole.github.io/family-menu/kitchen.html?v=4</div>
+        <button type="button" class="copy-link" onclick="copyLink('https://loopbearconsole.github.io/family-menu/kitchen.html?v=4')">复制链接</button>
       </div>
     </div>
-    <p class="hint" style="margin-top:16px;margin-bottom:0">扫出来必须是 github.io 网址；若出现源码页说明扫到了旧码，请重新打印本页二维码</p>
+    <p class="hint" style="margin-top:16px;margin-bottom:0">
+      扫码后地址栏必须是 <b style="color:#fdba74">loopbearconsole.github.io</b><br>
+      若仍是 jsdmirror / 源码页 = 扫到旧纸质码，请撕掉重贴
+    </p>
   </section>
   <footer class="foot">老刘小炒 · 菜谱来自 HowToCook · 极速版</footer>
 
-  <!-- 脚本：国内 CDN 优先（HTML 本身必须用 github.io 打开，CDN 会当纯文本显示源码） -->
-  <script src="https://cdn.jsdmirror.com/npm/qrcodejs@1.0.0/qrcode.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js'"></script>
-  <script src="https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/core.js" onerror="this.onerror=null;this.src='core.js'"></script>
-  <script src="https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/dishes-lite.js" onerror="this.onerror=null;this.src='dishes-lite.js'"></script>
+  <!-- 本站脚本 + 版本参数破缓存（同源，扫码进 github.io 一定是新逻辑） -->
+  <script src="core.js?v=15a9ab7"></script>
+  <script src="dishes-lite.js?v=15a9ab7"></script>
   <script>
     const dishes = DISHES_LITE;
     let cart = JSON.parse(localStorage.getItem('home_menu_cart') || '{}');
@@ -879,6 +889,16 @@
       if (e.key === 'Escape') { closeDetailDirect(); closeCart(); closeOrderOk(); }
     });
 
+    function copyLink(url) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function () { showToast('链接已复制'); }).catch(function () {
+          prompt('复制这个链接：', url);
+        });
+      } else {
+        prompt('复制这个链接：', url);
+      }
+    }
+
     // init：进页立刻渲染并开始下载全部缩略图
     setLoading(20);
     buildCategoryNav();
@@ -886,10 +906,8 @@
     renderDishes();
     updateCartUI();
     setLoading(70);
-    // 全量菜谱缩略图后台预取（含未显示分类的）
     preloadAllThumbs(dishes);
     setLoading(100);
-    // 二维码：静态图 qr/living.png、qr/kitchen.png（写死 github.io）
   </script>
 </body>
 </html>

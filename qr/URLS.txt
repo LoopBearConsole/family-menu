@@ -1,0 +1,2 @@
+﻿LIVING=https://loopbearconsole.github.io/family-menu/?v=4
+KITCHEN=https://loopbearconsole.github.io/family-menu/kitchen.html?v=4
