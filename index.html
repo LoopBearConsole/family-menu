@@ -460,29 +460,41 @@
         tip:'冬瓜后放，炖 20–30 分钟即可，避免过烂。' }
     ];
 
-    // 资源路径：GitHub Pages 项目站必须带 /family-menu/ 前缀
-    // 否则手机扫码打开无尾斜杠时，相对路径 images/xxx 会指到错误地址导致全无图
-    const ASSET_BASE = (() => {
-      const { protocol, hostname, pathname } = location;
-      if (protocol === 'file:') return '';
-      if (hostname.endsWith('github.io')) {
-        const segs = pathname.split('/').filter(Boolean);
-        // /family-menu 或 /family-menu/ 或 /family-menu/index.html
-        if (segs.length >= 1) return '/' + segs[0] + '/';
-      }
-      // 其他托管：取当前目录
-      if (pathname.endsWith('/')) return pathname;
-      if (pathname.endsWith('.html')) return pathname.replace(/[^/]+$/, '');
-      return pathname + '/';
-    })();
-
-    // 个别菜单独换过图文件名，避免 CDN 缓存旧图
+    // 图片：写死绝对地址，避免手机路径解析错误；多源回退（国内访问 GitHub 不稳定）
     const IMG_FILE = { d38: 'd38b', d40: 'd40b', d41: 'd41b' };
+    const IMG_VER = 'v6';
+    const IMG_HOSTS = [
+      'https://cdn.jsdelivr.net/gh/LoopBearConsole/family-menu@main/images/',
+      'https://fastly.jsdelivr.net/gh/LoopBearConsole/family-menu@main/images/',
+      'https://loopbearconsole.github.io/family-menu/images/',
+      'https://raw.githubusercontent.com/LoopBearConsole/family-menu/main/images/'
+    ];
+
+    function imgFile(id) {
+      return (IMG_FILE[id] || id) + '.jpg';
+    }
 
     function imgOf(id) {
-      const file = IMG_FILE[id] || id;
-      // 加版本参数：换图后强制刷新缓存
-      return `${ASSET_BASE}images/${file}.jpg?v=3`;
+      // 主源用 jsDelivr（比 raw github 更稳）；失败走 onImgError 换源
+      return IMG_HOSTS[0] + imgFile(id) + '?' + IMG_VER;
+    }
+
+    function onImgError(el, id) {
+      const step = Number(el.dataset.fb || 0) + 1;
+      el.dataset.fb = String(step);
+      if (step < IMG_HOSTS.length) {
+        el.src = IMG_HOSTS[step] + imgFile(id) + '?' + IMG_VER + '&r=' + step;
+        return;
+      }
+      // 全部失败：保留橙色底，显示菜名首字
+      el.style.display = 'none';
+      const wrap = el.parentElement;
+      if (wrap && !wrap.querySelector('.img-fallback')) {
+        const d = document.createElement('div');
+        d.className = 'img-fallback absolute inset-0 flex items-center justify-center text-white/90 font-display text-3xl font-bold';
+        d.textContent = (el.alt || '菜').slice(0, 1);
+        wrap.appendChild(d);
+      }
     }
 
     let cart = JSON.parse(localStorage.getItem('home_menu_cart') || '{}');
@@ -514,8 +526,8 @@
         card.innerHTML = `
           <div class="relative h-36 sm:h-40 overflow-hidden img-ph" onclick="openDetail('${d.id}')">
             <img src="${imgOf(d.id)}" alt="${d.name}" class="w-full h-full object-cover"
-              loading="lazy" decoding="async"
-              onerror="this.onerror=null;this.src='${imgOf(d.id).split('?')[0]}';this.style.opacity=1" />
+              decoding="async" referrerpolicy="no-referrer"
+              onerror="onImgError(this,'${d.id}')" />
             <span class="absolute top-2 left-2 text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/90 shadow text-orange-700">${d.catLabel}</span>
             ${qty ? `<span class="absolute top-2 right-2 min-w-[22px] h-[22px] px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">${qty}</span>` : ''}
           </div>
@@ -550,14 +562,13 @@
       if (!d) return;
       currentDish = d;
       const img = document.getElementById('dImg');
+      img.style.display = '';
       img.style.opacity = '1';
-      img.src = imgOf(d.id);
+      img.dataset.fb = '0';
       img.alt = d.name;
-      img.onerror = function () {
-        this.onerror = null;
-        const file = IMG_FILE[d.id] || d.id;
-        this.src = ASSET_BASE + 'images/' + file + '.jpg';
-      };
+      img.referrerPolicy = 'no-referrer';
+      img.onerror = function () { onImgError(this, d.id); };
+      img.src = imgOf(d.id);
       document.getElementById('dName').textContent = d.name;
       document.getElementById('dCat').textContent = d.catLabel;
       document.getElementById('dTime').textContent = `约 ${d.time} 分钟`;
@@ -663,7 +674,7 @@
           const d = findDish(item.id);
           return `
             <div class="flex items-center gap-3 bg-stone-50 rounded-2xl p-2.5">
-              <img src="${imgOf(item.id)}" alt="" class="w-14 h-14 rounded-xl object-cover img-ph" onerror="this.style.opacity=0.3" />
+              <img src="${imgOf(item.id)}" alt="" class="w-14 h-14 rounded-xl object-cover img-ph" referrerpolicy="no-referrer" onerror="onImgError(this,'${item.id}')" />
               <div class="flex-1 min-w-0">
                 <p class="font-medium text-sm text-stone-800 truncate">${item.name}</p>
                 <p class="text-[11px] text-stone-400 mt-0.5">${d ? '约 ' + d.time + ' 分钟' : ''}</p>
