@@ -3,130 +3,222 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#059669" />
   <title>老刘小炒 · 厨房看板</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet" />
   <style>
-    * { font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
-    .font-display { font-family: 'Noto Serif SC', serif; }
-    body { background: #f4f1ec; }
-    .img-ph { background: linear-gradient(135deg, #fed7aa, #fb923c); }
-    .sheet-mask { opacity: 0; pointer-events: none; transition: opacity .25s; }
-    .sheet-mask.open { opacity: 1; pointer-events: auto; }
-    .sheet-panel { transform: translateY(100%); transition: transform .3s cubic-bezier(.32,.72,0,1); }
-    .sheet-mask.open .sheet-panel { transform: translateY(0); }
-    @media (min-width: 640px) {
-      .sheet-panel { transform: scale(.95); opacity: 0; transition: .28s ease; }
-      .sheet-mask.open .sheet-panel { transform: scale(1); opacity: 1; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      background: #f4f1ec; color: #292524; min-height: 100vh; padding-bottom: 24px;
     }
-    @keyframes pulseDot {
-      0%, 100% { opacity: 1; }
-      50% { opacity: .35; }
+    .header {
+      background: linear-gradient(135deg, #059669, #0d9488, #0e7490);
+      color: #fff; text-align: center; padding: 36px 16px 48px;
     }
-    .live-dot { animation: pulseDot 1.4s ease infinite; }
-    .safe-bottom { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+    .header .sub { font-size: 11px; letter-spacing: .2em; opacity: .9; margin-bottom: 6px; }
+    .header h1 { font-size: 1.75rem; margin-bottom: 6px; }
+    .header p { font-size: 13px; opacity: .92; }
+    .pills { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+    .pills span {
+      background: rgba(255,255,255,.15); padding: 6px 12px; border-radius: 999px; font-size: 12px;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: #bef264; animation: pulse 1.4s ease infinite; }
+    @keyframes pulse { 50% { opacity: .35; } }
+
+    .toolbar {
+      max-width: 720px; margin: -20px auto 0; padding: 0 12px; position: relative; z-index: 2;
+    }
+    .toolbar-inner {
+      background: #fff; border-radius: 14px; padding: 10px;
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,.06);
+    }
+    .filters { display: flex; gap: 6px; }
+    .filter-btn {
+      border: 0; border-radius: 999px; padding: 7px 12px; font-size: 13px; font-weight: 600;
+      background: #f5f5f4; color: #57534e;
+    }
+    .filter-btn.active { background: #059669; color: #fff; }
+    .acts { display: flex; gap: 6px; }
+    .acts button {
+      border: 1px solid #e7e5e4; background: #fff; border-radius: 999px;
+      padding: 7px 12px; font-size: 12px; color: #57534e;
+    }
+
+    main { max-width: 720px; margin: 14px auto 0; padding: 0 12px; display: flex; flex-direction: column; gap: 12px; }
+    .empty { text-align: center; color: #a8a29e; padding: 50px 12px; }
+    .empty .big { font-size: 40px; margin-bottom: 8px; }
+
+    .order {
+      background: #fff; border-radius: 16px; overflow: hidden;
+      border: 1px solid #f5f5f4; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .order-hd {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 14px; border-bottom: 1px solid #fafaf9;
+    }
+    .order-hd .t { font-size: 11px; color: #a8a29e; }
+    .order-hd .n { font-weight: 700; margin-top: 2px; }
+    .st {
+      font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+    }
+    .st-pending { background: #ffedd5; color: #c2410c; }
+    .st-cooking { background: #e0f2fe; color: #0369a1; }
+    .st-done { background: #e7e5e4; color: #78716c; }
+
+    .item {
+      display: flex; gap: 10px; align-items: center; width: 100%;
+      padding: 10px 12px; border: 0; background: #fff; text-align: left;
+      border-bottom: 1px solid #fafaf9; cursor: pointer;
+    }
+    .item img {
+      width: 52px; height: 52px; border-radius: 10px; object-fit: cover;
+      background: linear-gradient(135deg, #a7f3d0, #34d399); flex-shrink: 0;
+    }
+    .item .meta { flex: 1; min-width: 0; }
+    .item .meta .name { font-weight: 700; font-size: 14px; }
+    .item .meta .sub { font-size: 11px; color: #a8a29e; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item .arrow { color: #d6d3d1; font-size: 18px; }
+
+    .order-ft {
+      padding: 10px 12px; background: #fafaf9; display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .order-ft button {
+      flex: 1; min-width: 100px; border: 0; border-radius: 10px;
+      padding: 10px; font-size: 13px; font-weight: 700; color: #fff;
+    }
+    .btn-cook { background: #0284c7; }
+    .btn-done { background: #059669; }
+    .btn-reopen { background: #fff; color: #57534e; border: 1px solid #d6d3d1 !important; }
+    .btn-mark { background: #fff; color: #78716c; border: 1px solid #e7e5e4 !important; flex: 0 0 auto; padding: 10px 14px !important; font-weight: 500 !important; }
+
+    .mask {
+      position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.5);
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .mask.open { opacity: 1; pointer-events: auto; }
+    .sheet {
+      width: 100%; max-width: 520px; max-height: 92vh; overflow: auto;
+      background: #fff; border-radius: 20px 20px 0 0;
+      transform: translateY(100%); transition: transform .28s cubic-bezier(.32,.72,0,1);
+    }
+    .mask.open .sheet { transform: translateY(0); }
+    .sheet-img { position: relative; height: 180px; background: linear-gradient(135deg,#a7f3d0,#34d399); }
+    .sheet-img img { width: 100%; height: 100%; object-fit: cover; }
+    .sheet-img .close {
+      position: absolute; top: 10px; right: 10px; width: 34px; height: 34px;
+      border: 0; border-radius: 999px; background: rgba(0,0,0,.45); color: #fff; font-size: 20px;
+    }
+    .sheet-img .time {
+      position: absolute; left: 10px; bottom: 10px;
+      background: rgba(0,0,0,.5); color: #fff; font-size: 11px; padding: 3px 8px; border-radius: 999px;
+    }
+    .sheet-body { padding: 16px 18px 24px; }
+    .sheet-body h2 { font-size: 22px; margin-bottom: 4px; }
+    .tagline { color: #047857; font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+    .box { margin-bottom: 14px; }
+    .box h4 { font-size: 12px; color: #78716c; margin-bottom: 8px; }
+    .ings { display: flex; flex-wrap: wrap; gap: 6px; }
+    .ings span { background: #ecfdf5; border: 1px solid #a7f3d0; font-size: 12px; padding: 4px 8px; border-radius: 8px; }
+    .steps { list-style: none; }
+    .steps li { display: flex; gap: 8px; font-size: 13px; line-height: 1.5; margin-bottom: 8px; color: #44403c; }
+    .steps .n {
+      flex-shrink: 0; width: 22px; height: 22px; border-radius: 999px;
+      background: #059669; color: #fff; font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tip { background: #fffbeb; border-radius: 12px; padding: 10px; font-size: 13px; color: #57534e; }
+    .okbtn {
+      width: 100%; margin-top: 14px; border: 0; border-radius: 12px;
+      background: #059669; color: #fff; font-weight: 700; padding: 12px;
+    }
+    .toast {
+      position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 80; pointer-events: none;
+    }
+    .toast div { background: #1c1917; color: #fff; font-size: 13px; padding: 10px 16px; border-radius: 999px; }
+    footer { text-align: center; color: #a8a29e; font-size: 12px; margin-top: 28px; padding: 0 12px; }
+    footer a { color: #059669; }
+    .img-fallback {
+      width: 52px; height: 52px; border-radius: 10px;
+      background: linear-gradient(135deg,#a7f3d0,#34d399);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 18px; flex-shrink: 0;
+    }
   </style>
 </head>
-<body class="min-h-screen text-stone-800 pb-8">
-
-  <header class="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 text-white">
-    <div class="max-w-3xl mx-auto px-4 pt-10 pb-12 text-center">
-      <p class="text-emerald-100 text-xs tracking-[0.2em] mb-2">KITCHEN · 厨房看板</p>
-      <h1 class="font-display text-3xl sm:text-4xl font-bold mb-2">老刘小炒</h1>
-      <p class="text-emerald-50/90 text-sm">客厅下单后，这里自动出现 · 点菜看做法</p>
-      <div class="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
-        <span class="inline-flex items-center gap-1.5 bg-white/15 px-3 py-1.5 rounded-full">
-          <span class="w-2 h-2 rounded-full bg-lime-300 live-dot"></span>
-          <span id="syncLabel">同步中…</span>
-        </span>
-        <span id="orderCount" class="bg-white/15 px-3 py-1.5 rounded-full">0 单待处理</span>
-      </div>
+<body>
+  <header class="header">
+    <p class="sub">KITCHEN · 厨房看板</p>
+    <h1>老刘小炒</h1>
+    <p>客厅下单后自动出现 · 点菜看做法</p>
+    <div class="pills">
+      <span><span class="dot"></span><span id="syncLabel">同步中…</span></span>
+      <span id="orderCount">0 单待处理</span>
     </div>
   </header>
 
-  <div class="max-w-3xl mx-auto px-3 -mt-5 relative z-10">
-    <div class="bg-white rounded-2xl shadow-md border border-emerald-50 p-3 flex flex-wrap gap-2 justify-between items-center">
-      <div class="flex gap-2">
-        <button type="button" data-filter="active" class="filter-btn active px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-600 text-white">进行中</button>
-        <button type="button" data-filter="all" class="filter-btn px-3 py-1.5 rounded-full text-sm font-medium bg-stone-100 text-stone-600">全部</button>
-        <button type="button" data-filter="done" class="filter-btn px-3 py-1.5 rounded-full text-sm font-medium bg-stone-100 text-stone-600">已完成</button>
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <div class="filters">
+        <button type="button" class="filter-btn active" data-filter="active">进行中</button>
+        <button type="button" class="filter-btn" data-filter="all">全部</button>
+        <button type="button" class="filter-btn" data-filter="done">已完成</button>
       </div>
-      <div class="flex gap-2">
-        <button type="button" onclick="refreshBoard(true)" class="text-sm px-3 py-1.5 rounded-full border border-stone-200 text-stone-600 hover:bg-stone-50">刷新</button>
-        <button type="button" onclick="clearDone()" class="text-sm px-3 py-1.5 rounded-full border border-stone-200 text-stone-500 hover:text-red-500">清理已完成</button>
-      </div>
-    </div>
-  </div>
-
-  <main class="max-w-3xl mx-auto px-3 mt-4 space-y-4" id="orderList"></main>
-
-  <div id="emptyState" class="max-w-3xl mx-auto px-4 py-16 text-center text-stone-400 hidden">
-    <p class="text-5xl mb-3">👩‍🍳</p>
-    <p class="font-medium text-stone-500">还没有新订单</p>
-    <p class="text-sm mt-1">客厅扫码点菜并下单后，会自动出现在这里</p>
-  </div>
-
-  <!-- 菜品做法详情 -->
-  <div id="detailMask" class="sheet-mask fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onclick="closeDetail(event)">
-    <div class="sheet-panel bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl max-h-[92vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
-      <div class="relative">
-        <img id="kImg" src="" alt="" class="w-full h-48 object-cover img-ph" referrerpolicy="no-referrer" />
-        <button type="button" onclick="closeDetailDirect()" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/45 text-white text-xl">&times;</button>
-        <span id="kTime" class="absolute bottom-3 left-3 px-2.5 py-1 rounded-full text-xs bg-black/50 text-white"></span>
-      </div>
-      <div class="p-5 sm:p-6">
-        <h2 id="kName" class="font-display text-2xl font-bold mb-1"></h2>
-        <p id="kTag" class="text-sm text-emerald-700 font-medium mb-3"></p>
-        <div class="mb-4">
-          <p class="text-xs font-semibold text-stone-500 mb-2">主要食材</p>
-          <div id="kIng" class="flex flex-wrap gap-1.5"></div>
-        </div>
-        <div class="mb-4">
-          <p class="text-xs font-semibold text-stone-500 mb-2">制作步骤</p>
-          <ol id="kSteps" class="space-y-2"></ol>
-        </div>
-        <div class="bg-amber-50 rounded-2xl p-3 text-sm text-stone-600">
-          <span class="font-semibold text-amber-700">小贴士：</span>
-          <span id="kTip"></span>
-        </div>
-        <button type="button" onclick="closeDetailDirect()" class="mt-5 w-full bg-emerald-600 text-white font-bold py-3 rounded-xl">知道了</button>
+      <div class="acts">
+        <button type="button" onclick="refreshBoard(true)">刷新</button>
+        <button type="button" onclick="clearDone()">清理已完成</button>
       </div>
     </div>
   </div>
 
-  <footer class="text-center text-stone-400 text-xs mt-10 safe-bottom">
-    <p>老刘小炒 · 厨房看板 · 每 5 秒自动同步</p>
-    <p class="mt-1"><a href="./" class="text-emerald-600 underline">返回客厅点餐页</a></p>
+  <main id="orderList"></main>
+  <div class="empty" id="emptyState" style="display:none">
+    <div class="big">👩‍🍳</div>
+    <div>还没有新订单</div>
+    <div style="font-size:12px;margin-top:6px">客厅扫码点菜并下单后会出现在这里</div>
+  </div>
+
+  <div class="mask" id="detailMask" onclick="closeDetail(event)">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-img">
+        <img id="kImg" alt="" />
+        <button type="button" class="close" onclick="closeDetailDirect()">&times;</button>
+        <span class="time" id="kTime"></span>
+      </div>
+      <div class="sheet-body">
+        <h2 id="kName"></h2>
+        <div class="tagline" id="kTag"></div>
+        <div class="box"><h4>主要食材</h4><div class="ings" id="kIng"></div></div>
+        <div class="box"><h4>制作步骤</h4><ol class="steps" id="kSteps"></ol></div>
+        <div class="tip"><strong>小贴士：</strong><span id="kTip"></span></div>
+        <button type="button" class="okbtn" onclick="closeDetailDirect()">知道了</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <footer>
+    老刘小炒 · 厨房看板 · 每 5 秒自动同步<br />
+    <a href="./">返回客厅点餐页</a>
   </footer>
 
-  <script src="shared.js"></script>
+  <script src="core.js"></script>
+  <script src="dishes-lite.js"></script>
   <script>
     let board = { orders: [], updatedAt: null };
     let filter = 'active';
     let lastSig = '';
     let knownIds = new Set();
 
-    const statusLabel = {
-      pending: '待做',
-      cooking: '制作中',
-      done: '已完成'
-    };
-    const statusClass = {
-      pending: 'bg-orange-100 text-orange-700',
-      cooking: 'bg-sky-100 text-sky-700',
-      done: 'bg-stone-200 text-stone-500'
-    };
+    const statusLabel = { pending: '待做', cooking: '制作中', done: '已完成' };
+    const statusClass = { pending: 'st-pending', cooking: 'st-cooking', done: 'st-done' };
 
     function showToast(msg) {
-      let t = document.getElementById('toast');
-      if (!t) {
-        t = document.createElement('div');
-        t.id = 'toast';
-        t.className = 'fixed left-1/2 -translate-x-1/2 bottom-8 z-[80] pointer-events-none';
-        document.body.appendChild(t);
-      }
-      t.innerHTML = `<div class="bg-stone-900 text-white text-sm px-5 py-2.5 rounded-full shadow-lg">${msg}</div>`;
-      setTimeout(() => { t.innerHTML = ''; }, 2000);
+      const t = document.getElementById('toast');
+      t.innerHTML = '<div>' + msg + '</div>';
+      setTimeout(() => { t.innerHTML = ''; }, 1800);
     }
 
     function orderSignature(orders) {
@@ -149,48 +241,43 @@
 
       if (!list.length) {
         root.innerHTML = '';
-        empty.classList.remove('hidden');
+        empty.style.display = 'block';
         return;
       }
-      empty.classList.add('hidden');
+      empty.style.display = 'none';
 
       root.innerHTML = list.map(order => {
         const items = order.items || [];
-        return `
-          <section class="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
-            <div class="px-4 py-3 border-b border-stone-50 flex items-center justify-between gap-2">
-              <div>
-                <p class="text-xs text-stone-400">${order.time || ''}</p>
-                <p class="font-bold text-stone-800 mt-0.5">订单 · ${items.reduce((s,i)=>s+(i.qty||0),0)} 份</p>
+        const total = items.reduce((s, i) => s + (i.qty || 0), 0);
+        return `<section class="order">
+          <div class="order-hd">
+            <div>
+              <div class="t">${order.time || ''}</div>
+              <div class="n">订单 · ${total} 份</div>
+            </div>
+            <span class="st ${statusClass[order.status] || 'st-pending'}">${statusLabel[order.status] || order.status}</span>
+          </div>
+          ${items.map(item => {
+            const lite = findDishLite(item.id) || {};
+            const hasImg = !!(lite.img || item.id);
+            return `<button type="button" class="item" onclick="openDish('${item.id}')">
+              ${hasImg
+                ? `<img src="${imgOf(item.id, true)}" alt="" loading="lazy" onerror="onImgError(this,'${item.id}',true)" />`
+                : `<div class="img-fallback">${(item.name || '?').slice(0,1)}</div>`}
+              <div class="meta">
+                <div class="name">${item.name || lite.name || item.id} <span style="color:#059669">×${item.qty || 1}</span></div>
+                <div class="sub">${lite.tagline || '点开看制作步骤'} · 约 ${lite.time || item.time || '?'} 分钟</div>
               </div>
-              <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${statusClass[order.status] || statusClass.pending}">${statusLabel[order.status] || order.status}</span>
-            </div>
-            <div class="divide-y divide-stone-50">
-              ${items.map(item => {
-                const d = findDish(item.id) || {};
-                return `
-                  <button type="button" onclick="openDish('${item.id}')"
-                    class="w-full flex items-center gap-3 p-3 text-left hover:bg-emerald-50/50 active:bg-emerald-50 transition">
-                    <img src="${imgOf(item.id)}" alt="" class="w-14 h-14 rounded-xl object-cover img-ph shrink-0"
-                      referrerpolicy="no-referrer" onerror="onImgError(this,'${item.id}')" />
-                    <div class="flex-1 min-w-0">
-                      <p class="font-semibold text-stone-800">${item.name || d.name || item.id}
-                        <span class="text-emerald-600">×${item.qty || 1}</span>
-                      </p>
-                      <p class="text-xs text-stone-400 mt-0.5 truncate">${d.tagline || '点开看制作步骤'}</p>
-                      <p class="text-[11px] text-stone-400">约 ${d.time || '?'} 分钟 · 点此看做法</p>
-                    </div>
-                    <span class="text-stone-300 text-lg">›</span>
-                  </button>`;
-              }).join('')}
-            </div>
-            <div class="px-3 py-3 bg-stone-50 flex flex-wrap gap-2">
-              ${order.status === 'pending' ? `<button type="button" onclick="setStatus('${order.id}','cooking')" class="flex-1 min-w-[100px] bg-sky-600 text-white text-sm font-bold py-2.5 rounded-xl">开始做</button>` : ''}
-              ${order.status === 'cooking' ? `<button type="button" onclick="setStatus('${order.id}','done')" class="flex-1 min-w-[100px] bg-emerald-600 text-white text-sm font-bold py-2.5 rounded-xl">做完了</button>` : ''}
-              ${order.status === 'done' ? `<button type="button" onclick="setStatus('${order.id}','pending')" class="flex-1 min-w-[100px] border border-stone-300 text-stone-600 text-sm font-medium py-2.5 rounded-xl">重新打开</button>` : ''}
-              ${order.status !== 'done' ? `<button type="button" onclick="setStatus('${order.id}','done')" class="px-4 py-2.5 rounded-xl border border-stone-200 text-sm text-stone-500">标为完成</button>` : ''}
-            </div>
-          </section>`;
+              <span class="arrow">›</span>
+            </button>`;
+          }).join('')}
+          <div class="order-ft">
+            ${order.status === 'pending' ? `<button type="button" class="btn-cook" onclick="setStatus('${order.id}','cooking')">开始做</button>` : ''}
+            ${order.status === 'cooking' ? `<button type="button" class="btn-done" onclick="setStatus('${order.id}','done')">做完了</button>` : ''}
+            ${order.status === 'done' ? `<button type="button" class="btn-reopen" onclick="setStatus('${order.id}','pending')">重新打开</button>` : ''}
+            ${order.status !== 'done' ? `<button type="button" class="btn-mark" onclick="setStatus('${order.id}','done')">标为完成</button>` : ''}
+          </div>
+        </section>`;
       }).join('');
     }
 
@@ -200,8 +287,6 @@
         if (manual) label.textContent = '刷新中…';
         const data = await fetchOrderBoard();
         const sig = orderSignature(data.orders);
-        const isNew = lastSig && sig !== lastSig;
-        // detect brand-new order ids
         const incoming = (data.orders || []).map(o => o.id);
         const brandNew = incoming.filter(id => lastSig && !knownIds.has(id));
         board = data;
@@ -213,9 +298,7 @@
         if (brandNew.length) {
           showToast('有新订单！');
           if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
-        } else if (manual) {
-          showToast('已刷新');
-        }
+        } else if (manual) showToast('已刷新');
       } catch (e) {
         console.error(e);
         label.textContent = '同步失败，重试中';
@@ -246,29 +329,38 @@
       }
     }
 
-    function openDish(id) {
-      const d = findDish(id);
-      if (!d) { showToast('找不到这道菜的资料'); return; }
+    async function openDish(id) {
+      const lite = findDishLite(id) || { id, name: id };
+      document.getElementById('kName').textContent = lite.name || id;
+      document.getElementById('kTag').textContent = lite.tagline || '加载中…';
+      document.getElementById('kTime').textContent = lite.time ? ('约 ' + lite.time + ' 分钟') : '';
+      document.getElementById('kIng').innerHTML = '';
+      document.getElementById('kSteps').innerHTML = '<li><span class="n">…</span><span>加载做法…</span></li>';
+      document.getElementById('kTip').textContent = '';
       const img = document.getElementById('kImg');
       img.style.display = '';
       img.dataset.fb = '0';
-      img.alt = d.name;
-      img.onerror = function () { onImgError(this, d.id); };
-      img.src = imgOf(d.id);
-      document.getElementById('kName').textContent = d.name;
-      document.getElementById('kTag').textContent = d.tagline || '';
-      document.getElementById('kTime').textContent = '约 ' + d.time + ' 分钟';
-      document.getElementById('kTip').textContent = d.tip || '按步骤慢慢做就好';
-      document.getElementById('kIng').innerHTML = (d.ingredients || [])
-        .map(x => `<span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-xs text-stone-600 border border-emerald-100">${x}</span>`).join('');
-      const steps = dishSteps(d);
-      document.getElementById('kSteps').innerHTML = steps.map((s, i) => `
-        <li class="flex gap-3 text-sm text-stone-700 leading-relaxed">
-          <span class="shrink-0 w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center">${i + 1}</span>
-          <span class="pt-0.5">${s}</span>
-        </li>`).join('') || '<li class="text-sm text-stone-400">暂无分步说明</li>';
+      img.alt = lite.name || '';
+      img.onerror = function () { onImgError(this, id, false); };
+      img.src = imgOf(id, false);
       document.getElementById('detailMask').classList.add('open');
       document.body.style.overflow = 'hidden';
+
+      try {
+        const d = await loadDishDetail(id);
+        document.getElementById('kName').textContent = d.name;
+        document.getElementById('kTag').textContent = d.tagline || '';
+        document.getElementById('kTime').textContent = '约 ' + d.time + ' 分钟';
+        document.getElementById('kTip').textContent = d.tip || '按步骤慢慢做就好';
+        document.getElementById('kIng').innerHTML = (d.ingredients || []).slice(0, 20)
+          .map(x => '<span>' + x + '</span>').join('') || '<span>详见步骤</span>';
+        const steps = dishSteps(d);
+        document.getElementById('kSteps').innerHTML = steps.map((s, i) =>
+          '<li><span class="n">' + (i + 1) + '</span><span>' + s + '</span></li>'
+        ).join('') || '<li><span class="n">1</span><span>暂无分步</span></li>';
+      } catch (e) {
+        document.getElementById('kTag').textContent = '详情加载失败';
+      }
     }
 
     function closeDetail(e) {
@@ -281,12 +373,8 @@
 
     document.querySelectorAll('.filter-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach(b => {
-          b.classList.remove('active', 'bg-emerald-600', 'text-white');
-          b.classList.add('bg-stone-100', 'text-stone-600');
-        });
-        btn.classList.add('active', 'bg-emerald-600', 'text-white');
-        btn.classList.remove('bg-stone-100', 'text-stone-600');
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
         filter = btn.dataset.filter;
         render();
       });
