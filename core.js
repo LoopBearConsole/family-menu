@@ -52,6 +52,7 @@ function onImgError(el, id, thumb) {
     return;
   }
   el.style.display = 'none';
+  el.classList.add('loaded');
   const wrap = el.parentElement;
   if (wrap && !wrap.querySelector('.img-fallback')) {
     const div = document.createElement('div');
