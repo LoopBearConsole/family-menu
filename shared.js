@@ -13124,10 +13124,12 @@ const DISHES = [
 
 
 
+
+
 const ORDER_BOARD_ID = '019f7956-dbdc-767d-9801-ae89afad20d8';
 const ORDER_BOARD_URL = 'https://jsonblob.com/api/jsonBlob/' + ORDER_BOARD_ID;
 
-const IMG_VER = 'htc4';
+const IMG_VER = 'fix17c';
 function pageImageBase() {
   try {
     if (typeof location === 'undefined') return 'images/';
