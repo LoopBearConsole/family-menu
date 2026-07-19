@@ -488,19 +488,28 @@
       <div class="qr-card">
         <div class="lab o">客厅</div>
         <h3>点餐码</h3>
-        <p>贴在客厅 / 餐桌</p>
-        <div class="qr-box"><div id="qrcodeLiving"></div></div>
-        <div class="qr-url" id="qrLivingLabel"></div>
+        <p>贴在客厅 / 餐桌 · 扫码打开菜单</p>
+        <div class="qr-box">
+          <!-- 静态二维码，写死 github.io，避免扫到 CDN 源码页 -->
+          <img src="qr/living.png" width="150" height="150" alt="客厅点餐二维码"
+            style="display:block;width:150px;height:150px"
+            onerror="this.onerror=null;this.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https%3A%2F%2Floopbearconsole.github.io%2Ffamily-menu%2F'" />
+        </div>
+        <div class="qr-url">https://loopbearconsole.github.io/family-menu/</div>
       </div>
       <div class="qr-card">
         <div class="lab g">厨房</div>
         <h3>看板码</h3>
-        <p>贴在厨房看订单</p>
-        <div class="qr-box"><div id="qrcodeKitchen"></div></div>
-        <div class="qr-url" id="qrKitchenLabel"></div>
+        <p>贴在厨房 · 看订单和做法</p>
+        <div class="qr-box">
+          <img src="qr/kitchen.png" width="150" height="150" alt="厨房看板二维码"
+            style="display:block;width:150px;height:150px"
+            onerror="this.onerror=null;this.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https%3A%2F%2Floopbearconsole.github.io%2Ffamily-menu%2Fkitchen.html'" />
+        </div>
+        <div class="qr-url">https://loopbearconsole.github.io/family-menu/kitchen.html</div>
       </div>
     </div>
-    <p class="hint" style="margin-top:16px;margin-bottom:0">固定网址，打印后长期有效</p>
+    <p class="hint" style="margin-top:16px;margin-bottom:0">扫出来必须是 github.io 网址；若出现源码页说明扫到了旧码，请重新打印本页二维码</p>
   </section>
   <footer class="foot">老刘小炒 · 菜谱来自 HowToCook · 极速版</footer>
 
@@ -823,24 +832,6 @@
       setTimeout(() => { t.innerHTML = ''; }, 1600);
     }
 
-    // 注意：jsDelivr/jsdmirror 打开 .html 会显示源码（Content-Type 是 text/plain）
-    // 入口必须用 GitHub Pages；图片/脚本已走国内 CDN
-    const GH_BASE = 'https://loopbearconsole.github.io/family-menu/';
-    const LIVING_URL = GH_BASE;
-    const KITCHEN_URL = GH_BASE + 'kitchen.html';
-
-    function makeQR(elId, url, labelId) {
-      const box = document.getElementById(elId);
-      const lab = document.getElementById(labelId);
-      if (lab) lab.textContent = url;
-      if (!box || typeof QRCode === 'undefined') {
-        if (box) box.innerHTML = '<div style="width:120px;height:120px;display:flex;align-items:center;justify-content:center;color:#999;font-size:11px;text-align:center">打开链接<br>复制网址</div>';
-        return;
-      }
-      box.innerHTML = '';
-      new QRCode(box, { text: url, width: 128, height: 128, colorDark: '#1c1917', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
-    }
-
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { closeDetailDirect(); closeCart(); closeOrderOk(); }
     });
@@ -852,8 +843,7 @@
     renderDishes();
     updateCartUI();
     setLoading(100);
-    makeQR('qrcodeLiving', LIVING_URL, 'qrLivingLabel');
-    makeQR('qrcodeKitchen', KITCHEN_URL, 'qrKitchenLabel');
+    // 二维码已改为页面内静态图片 qr/living.png、qr/kitchen.png（写死 github.io）
   </script>
 </body>
 </html>
