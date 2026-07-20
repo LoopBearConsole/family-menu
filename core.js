@@ -1,7 +1,9 @@
 // 老刘小炒 · 加速核心
 // 订单板：jsonblob + 本机缓存 + 乐观更新（按钮先变，后台再同步）
 
-const IMG_VER = 'imgfix23d';
+// 换图后务必改版本号，并优先走 github.io（CDN 会缓存旧图很久）
+const IMG_VER = 'imgfix24';
+const PAGES_ORIGIN = 'https://loopbearconsole.github.io/family-menu/';
 const REPO_CDN = 'https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/';
 const REPO_CDN2 = 'https://cdn.jsdelivr.net/gh/LoopBearConsole/family-menu@main/';
 const ORDER_BOARD_ID = '019f7956-dbdc-767d-9801-ae89afad20d8';
@@ -10,7 +12,9 @@ const BOARD_LOCAL_KEY = 'laoliu_order_board_v4';
 
 function localBase(kind) {
   try {
-    if (typeof location === 'undefined' || location.protocol === 'file:') return kind + '/';
+    if (typeof location === 'undefined' || location.protocol === 'file:') {
+      return PAGES_ORIGIN + kind + '/';
+    }
     if ((location.hostname || '').endsWith('github.io')) {
       const segs = location.pathname.split('/').filter(Boolean);
       return '/' + (segs[0] || 'family-menu') + '/' + kind + '/';
@@ -19,12 +23,13 @@ function localBase(kind) {
     const dir = p.endsWith('/') ? p : p.replace(/[^/]+$/, '');
     return dir + kind + '/';
   } catch (e) {
-    return kind + '/';
+    return PAGES_ORIGIN + kind + '/';
   }
 }
 
-function cdnBases(kind) {
-  return [REPO_CDN + kind + '/', REPO_CDN2 + kind + '/', localBase(kind)];
+// 优先本站 github.io（随仓库更新），CDN 仅作备用
+function imgBases(kind) {
+  return [localBase(kind), PAGES_ORIGIN + kind + '/', REPO_CDN + kind + '/', REPO_CDN2 + kind + '/'];
 }
 
 function imgOf(id, thumb) {
@@ -33,7 +38,7 @@ function imgOf(id, thumb) {
     (window.__detailCache && window.__detailCache[id]);
   const file = d && d.img ? d.img : id + '.jpg';
   const folder = thumb ? 'thumbs' : 'images';
-  return cdnBases(folder)[0] + file + '?' + IMG_VER;
+  return imgBases(folder)[0] + file + '?' + IMG_VER;
 }
 
 function onImgError(el, id, thumb) {
@@ -42,9 +47,14 @@ function onImgError(el, id, thumb) {
   const folder = thumb ? 'thumbs' : 'images';
   const step = Number(el.dataset.fb || 0) + 1;
   el.dataset.fb = String(step);
-  const bases = cdnBases(folder).concat(cdnBases('images'));
-  if (step < bases.length) {
-    el.src = bases[step] + file + '?' + IMG_VER + '&r=' + step;
+  const bases = imgBases(folder).concat(imgBases('images'));
+  // 去重
+  const uniq = [];
+  bases.forEach(function (b) {
+    if (uniq.indexOf(b) < 0) uniq.push(b);
+  });
+  if (step < uniq.length) {
+    el.src = uniq[step] + file + '?' + IMG_VER + '&r=' + step;
     return;
   }
   el.style.display = 'none';
@@ -67,9 +77,10 @@ window.__detailCache = window.__detailCache || {};
 async function loadDishDetail(id) {
   if (window.__detailCache[id]) return window.__detailCache[id];
   const urls = [
+    localBase('details') + id + '.json?' + IMG_VER,
+    PAGES_ORIGIN + 'details/' + id + '.json?' + IMG_VER,
     REPO_CDN + 'details/' + id + '.json?' + IMG_VER,
     REPO_CDN2 + 'details/' + id + '.json',
-    localBase('details') + id + '.json?' + IMG_VER,
   ];
   let lastErr;
   for (const u of urls) {
