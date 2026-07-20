@@ -518,8 +518,8 @@
             src="https://loopbearconsole.github.io/family-menu/qr/kitchen.png?v=4"
             onerror="this.onerror=null;this.src='https://api.qrserver.com/v1/create-qr-code/?size=160x160&ecc=H&data=https%3A%2F%2Floopbearconsole.github.io%2Ffamily-menu%2Fkitchen.html%3Fv%3D4'" />
         </div>
-        <div class="qr-url" id="qrKitchenLabel">https://loopbearconsole.github.io/family-menu/kitchen.html?v=4</div>
-        <button type="button" class="copy-link" onclick="copyLink('https://loopbearconsole.github.io/family-menu/kitchen.html?v=4')">复制链接</button>
+        <div class="qr-url" id="qrKitchenLabel">https://loopbearconsole.github.io/family-menu/kitchen.html?v=fixbtn2</div>
+        <button type="button" class="copy-link" onclick="copyLink('https://loopbearconsole.github.io/family-menu/kitchen.html?v=fixbtn2')">复制链接</button>
       </div>
     </div>
     <p class="hint" style="margin-top:16px;margin-bottom:0">
@@ -529,9 +529,8 @@
   </section>
   <footer class="foot">老刘小炒 · 菜谱来自 HowToCook · 极速版</footer>
 
-  <script src="board-config.js?v=gitee1"></script>
-  <script src="core.js?v=gitee1"></script>
-  <script src="dishes-lite.js?v=gitee1"></script>
+  <script src="core.js?v=fixbtn2"></script>
+  <script src="dishes-lite.js?v=fixbtn2"></script>
   <script>
     const dishes = DISHES_LITE;
     let cart = JSON.parse(localStorage.getItem('home_menu_cart') || '{}');
@@ -846,14 +845,12 @@
     async function placeOrder() {
       const items = Object.values(cart);
       if (!items.length) { showToast('先选几道菜再下单哦'); return; }
-      if (typeof isCloudConfigured === 'function' && !isCloudConfigured()) {
-        showToast('请先在厨房页配置国内云同步');
-      }
       const names = items.map(i => i.name + ' ×' + i.qty).join('、');
       const order = {
         id: 'o_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
         time: new Date().toLocaleString('zh-CN'),
         ts: Date.now(),
+        updatedAt: new Date().toISOString(),
         status: 'pending',
         items: items.map(i => ({ id: i.id, name: i.name, qty: i.qty, time: (findDishLite(i.id) || {}).time || null }))
       };
@@ -861,11 +858,21 @@
         showToast('正在送到厨房…');
         const board = await pushKitchenOrder(order);
         if (board && board._remoteOk === false) {
-          showToast(isCloudConfigured() ? '已下单，云端稍后再同步' : '已下单到本机（未配置云）');
+          showToast('已下单，云端稍后再同步');
         }
       } catch (e) {
         console.error(e);
-        showToast('厨房同步失败，订单已保存在本机');
+        // 本机仍会记下历史；尽量再写一次本地订单板
+        try {
+          if (typeof readLocalBoard === 'function' && typeof writeLocalBoard === 'function') {
+            const b = readLocalBoard();
+            b.orders = Array.isArray(b.orders) ? b.orders : [];
+            b.orders.unshift(order);
+            b.updatedAt = new Date().toISOString();
+            writeLocalBoard(b);
+          }
+        } catch (e2) {}
+        showToast('已下单到本机，网络好时会自动同步');
       }
       const hist = JSON.parse(localStorage.getItem('home_menu_orders') || '[]');
       hist.unshift({ time: order.time, items: names, count: items.reduce((s, i) => s + i.qty, 0) });

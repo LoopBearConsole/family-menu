@@ -88,6 +88,7 @@
       flex: 1; min-width: 100px; border: 0; border-radius: 10px;
       padding: 10px; font-size: 13px; font-weight: 700; color: #fff;
     }
+    .order-ft button:disabled { opacity: .65; }
     .btn-cook { background: #0284c7; }
     .btn-done { background: #059669; }
     .btn-reopen { background: #fff; color: #57534e; border: 1px solid #d6d3d1 !important; }
@@ -169,58 +170,7 @@
       <div class="acts">
         <button type="button" onclick="refreshBoard(true)">刷新</button>
         <button type="button" onclick="clearDone()">清理已完成</button>
-        <button type="button" onclick="openCloudSetup()">配置同步</button>
       </div>
-    </div>
-  </div>
-
-  <div id="cloudBanner" style="display:none;max-width:720px;margin:12px auto 0;padding:0 12px">
-    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:12px 14px;font-size:13px;color:#9a3412;line-height:1.55">
-      <b>尚未配置国内云同步（Gitee 码云）</b>：现在只能本机缓存，两台手机无法互通。<br>
-      Gitee 国内可免费注册，约 3 分钟配好。点「配置同步」。
-      <div style="margin-top:8px">
-        <button type="button" onclick="openCloudSetup()" style="border:0;background:#ea580c;color:#fff;border-radius:999px;padding:8px 14px;font-weight:700;font-size:12px">立即配置</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 国内云配置弹窗：Gitee -->
-  <div id="cloudMask" style="display:none;position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.5);align-items:flex-end;justify-content:center;padding:0">
-    <div style="width:100%;max-width:520px;max-height:92vh;overflow:auto;background:#fff;border-radius:18px 18px 0 0;padding:18px 16px 28px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <h2 style="font-size:18px">国内云同步（Gitee 免费）</h2>
-        <button type="button" onclick="closeCloudSetup()" style="border:0;background:#f5f5f4;width:32px;height:32px;border-radius:999px;font-size:18px">&times;</button>
-      </div>
-      <ol style="font-size:13px;color:#44403c;line-height:1.7;padding-left:18px;margin-bottom:12px">
-        <li>打开 <a href="https://gitee.com" target="_blank" rel="noopener">gitee.com</a> 注册/登录（国内码云，一般可注册）</li>
-        <li>右上角 <b>+</b> → 新建仓库 → 勾选<strong>私有</strong> → 名称填 <code>laoliu-board</code> → 创建（空仓库即可）</li>
-        <li>头像 → 设置 → <b>私人令牌</b> → 生成新令牌 → 勾选 <b>projects</b> → 提交后<strong>立刻复制令牌</strong></li>
-        <li>把下方三项填好 → 点「保存并测试」</li>
-        <li>客厅手机同样配置，或点「生成配置码」让另一台扫</li>
-      </ol>
-      <label style="font-size:12px;color:#78716c">Gitee 用户名（个人主页地址里的名字）</label>
-      <input id="cfgOwner" style="width:100%;margin:4px 0 10px;padding:10px;border:1px solid #e7e5e4;border-radius:10px;font-size:13px" placeholder="例如 zhangsan" autocomplete="username" />
-      <label style="font-size:12px;color:#78716c">仓库名</label>
-      <input id="cfgRepo" style="width:100%;margin:4px 0 10px;padding:10px;border:1px solid #e7e5e4;border-radius:10px;font-size:13px" placeholder="laoliu-board" value="laoliu-board" />
-      <label style="font-size:12px;color:#78716c">私人令牌 access_token</label>
-      <input id="cfgToken" type="password" style="width:100%;margin:4px 0 12px;padding:10px;border:1px solid #e7e5e4;border-radius:10px;font-size:13px" placeholder="粘贴私人令牌" autocomplete="off" />
-      <div style="display:flex;flex-wrap:wrap;gap:8px">
-        <button type="button" onclick="saveCloudSetup()" style="flex:1;min-width:120px;border:0;background:#059669;color:#fff;border-radius:12px;padding:12px;font-weight:700">保存并测试</button>
-        <button type="button" onclick="exportConfigQR()" style="flex:1;min-width:120px;border:1px solid #d6d3d1;background:#fff;border-radius:12px;padding:12px;font-weight:600">生成配置码</button>
-        <button type="button" onclick="clearCloudSetup()" style="border:1px solid #fecaca;background:#fff;color:#b91c1c;border-radius:12px;padding:12px 14px">清除</button>
-      </div>
-      <p id="cfgMsg" style="font-size:12px;color:#78716c;margin-top:10px;line-height:1.5"></p>
-      <div id="cfgQrBox" style="display:none;text-align:center;margin-top:12px">
-        <p style="font-size:12px;color:#57534e;margin-bottom:8px">另一台手机用厨房页「导入配置」或扫此码（也可复制下方文本）</p>
-        <div id="cfgQr" style="display:inline-block;background:#fff;padding:8px;border-radius:12px;border:1px solid #e7e5e4"></div>
-        <p id="cfgText" style="font-size:10px;color:#a8a29e;word-break:break-all;margin-top:8px;text-align:left"></p>
-      </div>
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid #f5f5f4">
-        <label style="font-size:12px;color:#78716c">或粘贴配置文本导入</label>
-        <input id="cfgImport" style="width:100%;margin:4px 0 8px;padding:10px;border:1px solid #e7e5e4;border-radius:10px;font-size:12px" placeholder="laoliu-cfg:..." />
-        <button type="button" onclick="importConfigText()" style="border:0;background:#0f766e;color:#fff;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700">导入配置</button>
-      </div>
-      <p style="font-size:11px;color:#a8a29e;margin-top:12px;line-height:1.5">令牌只存在本机浏览器，不会上传到 GitHub 菜单仓库。请勿把令牌发到公开群。</p>
     </div>
   </div>
 
@@ -255,10 +205,8 @@
     <a href="./">返回客厅点餐页</a>
   </footer>
 
-  <script src="board-config.js?v=gitee1"></script>
-  <script src="core.js?v=gitee1"></script>
-  <script src="dishes-lite.js?v=gitee1"></script>
-  <script src="https://cdn.jsdmirror.com/npm/qrcodejs@1.0.0/qrcode.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js'"></script>
+  <script src="core.js?v=fixbtn2"></script>
+  <script src="dishes-lite.js?v=fixbtn2"></script>
   <script>
     let board = { orders: [], updatedAt: null };
     let filter = 'active';
@@ -266,6 +214,7 @@
     let knownIds = new Set();
     let pollTimer = null;
     let refreshing = false;
+    let busyStatus = false; // 点按钮后短暂暂停轮询覆盖
 
     const statusLabel = { pending: '待做', cooking: '制作中', done: '已完成' };
     const statusClass = { pending: 'st-pending', cooking: 'st-cooking', done: 'st-done' };
@@ -273,17 +222,17 @@
     function showToast(msg) {
       const t = document.getElementById('toast');
       t.innerHTML = '<div>' + msg + '</div>';
-      setTimeout(() => { t.innerHTML = ''; }, 2000);
+      setTimeout(function () { t.innerHTML = ''; }, 2000);
     }
 
     function orderSignature(orders) {
-      return (orders || []).map(o => o.id + ':' + (o.status || '')).join('|');
+      return (orders || []).map(function (o) { return o.id + ':' + (o.status || ''); }).join('|');
     }
 
     function filteredOrders() {
       const list = board.orders || [];
-      if (filter === 'active') return list.filter(o => o.status !== 'done');
-      if (filter === 'done') return list.filter(o => o.status === 'done');
+      if (filter === 'active') return list.filter(function (o) { return o.status !== 'done'; });
+      if (filter === 'done') return list.filter(function (o) { return o.status === 'done'; });
       return list;
     }
 
@@ -291,7 +240,7 @@
       const list = filteredOrders();
       const root = document.getElementById('orderList');
       const empty = document.getElementById('emptyState');
-      const activeCount = (board.orders || []).filter(o => o.status !== 'done').length;
+      const activeCount = (board.orders || []).filter(function (o) { return o.status !== 'done'; }).length;
       document.getElementById('orderCount').textContent = activeCount + ' 单待处理';
 
       if (!list.length) {
@@ -301,48 +250,60 @@
       }
       empty.style.display = 'none';
 
-      root.innerHTML = list.map(order => {
+      root.innerHTML = list.map(function (order) {
         const items = order.items || [];
-        const total = items.reduce((s, i) => s + (i.qty || 0), 0);
-        return `<section class="order">
-          <div class="order-hd">
-            <div>
-              <div class="t">${order.time || ''}</div>
-              <div class="n">订单 · ${total} 份</div>
-            </div>
-            <span class="st ${statusClass[order.status] || 'st-pending'}">${statusLabel[order.status] || order.status}</span>
-          </div>
-          ${items.map(item => {
+        const total = items.reduce(function (s, i) { return s + (i.qty || 0); }, 0);
+        return '<section class="order">' +
+          '<div class="order-hd"><div>' +
+            '<div class="t">' + (order.time || '') + '</div>' +
+            '<div class="n">订单 · ' + total + ' 份</div>' +
+          '</div>' +
+          '<span class="st ' + (statusClass[order.status] || 'st-pending') + '">' +
+            (statusLabel[order.status] || order.status) +
+          '</span></div>' +
+          items.map(function (item) {
             const lite = (typeof findDishLite === 'function' ? findDishLite(item.id) : null) || {};
-            return `<button type="button" class="item" onclick="openDish('${item.id}')">
-              <img src="${imgOf(item.id, true)}" alt="" loading="eager" onerror="onImgError(this,'${item.id}',true)" />
-              <div class="meta">
-                <div class="name">${item.name || lite.name || item.id} <span style="color:#059669">×${item.qty || 1}</span></div>
-                <div class="sub">${lite.tagline || '点开看制作步骤'} · 约 ${lite.time || item.time || '?'} 分钟</div>
-              </div>
-              <span class="arrow">›</span>
-            </button>`;
-          }).join('')}
-          <div class="order-ft">
-            ${order.status === 'pending' ? `<button type="button" class="btn-cook" onclick="setStatus('${order.id}','cooking')">开始做</button>` : ''}
-            ${order.status === 'cooking' ? `<button type="button" class="btn-done" onclick="setStatus('${order.id}','done')">做完了</button>` : ''}
-            ${order.status === 'done' ? `<button type="button" class="btn-reopen" onclick="setStatus('${order.id}','pending')">重新打开</button>` : ''}
-            ${order.status !== 'done' ? `<button type="button" class="btn-mark" onclick="setStatus('${order.id}','done')">标为完成</button>` : ''}
-          </div>
-        </section>`;
+            return '<button type="button" class="item" onclick="openDish(\'' + item.id + '\')">' +
+              '<img src="' + imgOf(item.id, true) + '" alt="" loading="eager" onerror="onImgError(this,\'' + item.id + '\',true)" />' +
+              '<div class="meta">' +
+                '<div class="name">' + (item.name || lite.name || item.id) +
+                  ' <span style="color:#059669">×' + (item.qty || 1) + '</span></div>' +
+                '<div class="sub">' + (lite.tagline || '点开看制作步骤') + ' · 约 ' + (lite.time || item.time || '?') + ' 分钟</div>' +
+              '</div><span class="arrow">›</span></button>';
+          }).join('') +
+          '<div class="order-ft">' +
+            (order.status === 'pending'
+              ? '<button type="button" class="btn-cook" onclick="setStatus(\'' + order.id + '\',\'cooking\')">开始做</button>'
+              : '') +
+            (order.status === 'cooking'
+              ? '<button type="button" class="btn-done" onclick="setStatus(\'' + order.id + '\',\'done\')">做完了</button>'
+              : '') +
+            (order.status === 'done'
+              ? '<button type="button" class="btn-reopen" onclick="setStatus(\'' + order.id + '\',\'pending\')">重新打开</button>'
+              : '') +
+            (order.status !== 'done'
+              ? '<button type="button" class="btn-mark" onclick="setStatus(\'' + order.id + '\',\'done\')">标为完成</button>'
+              : '') +
+          '</div></section>';
       }).join('');
     }
 
     async function refreshBoard(manual) {
+      if (busyStatus && !manual) return;
       if (refreshing && !manual) return;
       refreshing = true;
       const label = document.getElementById('syncLabel');
       try {
         if (manual) label.textContent = '刷新中…';
         const data = await fetchOrderBoard();
+        // 忙碌改状态时不覆盖界面（本机已是最新意图）
+        if (busyStatus && !manual) {
+          label.textContent = '已同步';
+          return;
+        }
         const sig = orderSignature(data.orders);
-        const incoming = (data.orders || []).map(o => o.id);
-        const brandNew = incoming.filter(id => lastSig && !knownIds.has(id));
+        const incoming = (data.orders || []).map(function (o) { return o.id; });
+        const brandNew = incoming.filter(function (id) { return lastSig && !knownIds.has(id); });
         const statusChanged = lastSig && sig !== lastSig;
         board = data;
         lastSig = sig;
@@ -358,7 +319,6 @@
         }
       } catch (e) {
         console.error(e);
-        // 远程失败时尝试展示本地缓存，避免空白
         try {
           if (typeof readLocalBoard === 'function') {
             const local = readLocalBoard();
@@ -376,33 +336,44 @@
     }
 
     async function setStatus(orderId, status) {
-      // 乐观更新：先改界面，再后台同步
-      const prev = board;
-      try {
-        board = {
-          orders: (board.orders || []).map(function (o) {
-            return o.id === orderId ? Object.assign({}, o, { status: status }) : o;
-          }),
-          updatedAt: new Date().toISOString(),
-        };
-        lastSig = orderSignature(board.orders);
-        render();
-        showToast(statusLabel[status] || '已更新');
+      if (busyStatus) return;
+      busyStatus = true;
+      const stamp = new Date().toISOString();
 
+      // 乐观更新：立刻改界面 + 立刻写本机，不等后台
+      board = {
+        orders: (board.orders || []).map(function (o) {
+          return o.id === orderId
+            ? Object.assign({}, o, { status: status, updatedAt: stamp })
+            : o;
+        }),
+        updatedAt: stamp,
+      };
+      lastSig = orderSignature(board.orders);
+      if (typeof writeLocalBoard === 'function') writeLocalBoard(board);
+      render();
+      showToast(statusLabel[status] || '已更新');
+
+      try {
         const remote = await updateKitchenOrderStatus(orderId, status);
-        board = remote;
-        lastSig = orderSignature(board.orders);
-        if (remote && remote._remoteOk === false) {
-          showToast('已改状态，云端稍后再同步');
+        if (remote && remote.orders) {
+          board = remote;
+          lastSig = orderSignature(board.orders);
+          render();
         }
-        render();
+        // 远程失败也不提示「失败」——本机已经改好了
+        if (remote && remote._remoteOk === false) {
+          // 轻提示即可，不吓人
+          const label = document.getElementById('syncLabel');
+          if (label) label.textContent = '本机已更新，云端稍后同步';
+        }
       } catch (e) {
         console.error(e);
-        // 即使远程失败，本地已改；尝试写本地
-        try {
-          if (typeof writeLocalBoard === 'function') writeLocalBoard(board);
-        } catch (e2) {}
-        showToast('已改状态（离线缓存），网络恢复后自动同步');
+        // 本机已写，绝不回滚、不弹「后台未响应」
+        if (typeof writeLocalBoard === 'function') writeLocalBoard(board);
+      } finally {
+        // 稍等再允许轮询覆盖，避免把刚改的状态刷回去
+        setTimeout(function () { busyStatus = false; }, 800);
       }
     }
 
@@ -412,28 +383,28 @@
           orders: (board.orders || []).filter(function (o) { return o.status !== 'done'; }),
           updatedAt: new Date().toISOString(),
         };
+        if (typeof writeLocalBoard === 'function') writeLocalBoard(board);
         render();
         board = await clearDoneKitchenOrders();
         lastSig = orderSignature(board.orders);
-        knownIds = new Set((board.orders || []).map(o => o.id));
+        knownIds = new Set((board.orders || []).map(function (o) { return o.id; }));
         render();
         showToast('已清理完成订单');
       } catch (e) {
-        showToast('清理失败，请重试');
+        showToast('已清理本机完成订单');
       }
     }
 
     function startPolling() {
       if (pollTimer) clearInterval(pollTimer);
       pollTimer = setInterval(function () {
-        // 页面在前台才刷，省流量也更稳
         if (document.hidden) return;
         refreshBoard(false);
       }, 3000);
     }
 
     async function openDish(id) {
-      const lite = findDishLite(id) || { id, name: id };
+      const lite = findDishLite(id) || { id: id, name: id };
       document.getElementById('kName').textContent = lite.name || id;
       document.getElementById('kTag').textContent = lite.tagline || '加载中…';
       document.getElementById('kTime').textContent = lite.time ? ('约 ' + lite.time + ' 分钟') : '';
@@ -456,11 +427,11 @@
         document.getElementById('kTime').textContent = '约 ' + d.time + ' 分钟';
         document.getElementById('kTip').textContent = d.tip || '按步骤慢慢做就好';
         document.getElementById('kIng').innerHTML = (d.ingredients || []).slice(0, 20)
-          .map(x => '<span>' + x + '</span>').join('') || '<span>详见步骤</span>';
+          .map(function (x) { return '<span>' + x + '</span>'; }).join('') || '<span>详见步骤</span>';
         const steps = dishSteps(d);
-        document.getElementById('kSteps').innerHTML = steps.map((s, i) =>
-          '<li><span class="n">' + (i + 1) + '</span><span>' + s + '</span></li>'
-        ).join('') || '<li><span class="n">1</span><span>暂无分步</span></li>';
+        document.getElementById('kSteps').innerHTML = steps.map(function (s, i) {
+          return '<li><span class="n">' + (i + 1) + '</span><span>' + s + '</span></li>';
+        }).join('') || '<li><span class="n">1</span><span>暂无分步</span></li>';
       } catch (e) {
         document.getElementById('kTag').textContent = '详情加载失败';
       }
@@ -474,144 +445,19 @@
       document.body.style.overflow = '';
     }
 
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.filter-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
         filter = btn.dataset.filter;
         render();
       });
     });
 
-    document.addEventListener('keydown', e => {
+    document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closeDetailDirect();
     });
 
-    function updateCloudBanner() {
-      const el = document.getElementById('cloudBanner');
-      if (!el) return;
-      el.style.display = (typeof isCloudConfigured === 'function' && isCloudConfigured()) ? 'none' : 'block';
-    }
-
-    function openCloudSetup() {
-      const mask = document.getElementById('cloudMask');
-      mask.style.display = 'flex';
-      mask.style.flexDirection = 'column';
-      mask.style.justifyContent = 'flex-end';
-      mask.style.alignItems = 'center';
-      const cfg = (typeof getBoardConfig === 'function' && getBoardConfig()) || (window.BOARD_CONFIG || {});
-      const g = (cfg && cfg.gitee) || {};
-      document.getElementById('cfgOwner').value = g.owner || '';
-      document.getElementById('cfgRepo').value = g.repo || 'laoliu-board';
-      document.getElementById('cfgToken').value = g.token || '';
-      document.getElementById('cfgMsg').textContent = isCloudConfigured()
-        ? '已配置。可点「保存并测试」验证，或生成配置码给另一台手机。'
-        : '按上面步骤用 Gitee（码云）配置，国内一般可注册。';
-      document.getElementById('cfgQrBox').style.display = 'none';
-    }
-
-    function closeCloudSetup() {
-      document.getElementById('cloudMask').style.display = 'none';
-    }
-
-    async function saveCloudSetup() {
-      const owner = document.getElementById('cfgOwner').value.trim();
-      const repo = document.getElementById('cfgRepo').value.trim() || 'laoliu-board';
-      const token = document.getElementById('cfgToken').value.trim();
-      const msg = document.getElementById('cfgMsg');
-      if (!owner || !token) {
-        msg.textContent = '请填写用户名和私人令牌';
-        msg.style.color = '#b91c1c';
-        return;
-      }
-      const cfg = {
-        provider: 'gitee',
-        gitee: { owner: owner, repo: repo, token: token, path: 'board.json' }
-      };
-      saveBoardConfig(cfg);
-      msg.textContent = '已保存，正在测试连接（会在仓库创建 board.json）…';
-      msg.style.color = '#57534e';
-      try {
-        await testCloudConnection();
-        msg.textContent = '连接成功！客厅手机请同样配置（或生成配置码）。';
-        msg.style.color = '#047857';
-        updateCloudBanner();
-        refreshBoard(true);
-      } catch (e) {
-        msg.textContent = '测试失败：' + (e && e.message ? e.message : e) +
-          '。请检查：仓库是否私有已创建、用户名是否正确、令牌是否勾选 projects 且未过期。';
-        msg.style.color = '#b91c1c';
-      }
-    }
-
-    function clearCloudSetup() {
-      if (!confirm('确定清除本机云配置？')) return;
-      clearBoardConfig();
-      document.getElementById('cfgOwner').value = '';
-      document.getElementById('cfgRepo').value = 'laoliu-board';
-      document.getElementById('cfgToken').value = '';
-      document.getElementById('cfgMsg').textContent = '已清除';
-      document.getElementById('cfgQrBox').style.display = 'none';
-      updateCloudBanner();
-    }
-
-    function exportConfigQR() {
-      const cfg = getBoardConfig();
-      const msg = document.getElementById('cfgMsg');
-      if (!cfg || !cfg.gitee || !cfg.gitee.owner || !cfg.gitee.token) {
-        msg.textContent = '请先保存配置，再生成配置码';
-        msg.style.color = '#b91c1c';
-        return;
-      }
-      const text = 'laoliu-cfg:' + btoa(unescape(encodeURIComponent(JSON.stringify(cfg.gitee))));
-      document.getElementById('cfgQrBox').style.display = 'block';
-      document.getElementById('cfgText').textContent = text;
-      const box = document.getElementById('cfgQr');
-      box.innerHTML = '';
-      if (typeof QRCode !== 'undefined') {
-        new QRCode(box, { text: text, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
-      } else {
-        box.textContent = '（二维码库未加载，请复制下方文本）';
-      }
-      msg.textContent = '配置码已生成。另一台手机在配置页粘贴导入即可。';
-      msg.style.color = '#047857';
-    }
-
-    function importConfigText() {
-      const raw = document.getElementById('cfgImport').value.trim();
-      const msg = document.getElementById('cfgMsg');
-      try {
-        let json = raw;
-        if (raw.indexOf('laoliu-cfg:') === 0) {
-          json = decodeURIComponent(escape(atob(raw.slice('laoliu-cfg:'.length))));
-        }
-        const g = JSON.parse(json);
-        if (!g.owner || !g.token) throw new Error('字段不完整');
-        document.getElementById('cfgOwner').value = g.owner;
-        document.getElementById('cfgRepo').value = g.repo || 'laoliu-board';
-        document.getElementById('cfgToken').value = g.token;
-        msg.textContent = '已填入，请点「保存并测试」';
-        msg.style.color = '#047857';
-      } catch (e) {
-        msg.textContent = '导入失败，请检查内容';
-        msg.style.color = '#b91c1c';
-      }
-    }
-
-    // 支持 URL 带 #cfg= 导入
-    (function tryHashCfg() {
-      try {
-        const h = location.hash || '';
-        if (h.indexOf('#cfg=') === 0) {
-          document.getElementById('cfgImport').value = decodeURIComponent(h.slice(5));
-          openCloudSetup();
-          importConfigText();
-        }
-      } catch (e) {}
-    })();
-
-    updateCloudBanner();
-    // 进入立刻刷；每 3 秒自动刷；回到前台再刷
     refreshBoard(true);
     startPolling();
     document.addEventListener('visibilitychange', function () {

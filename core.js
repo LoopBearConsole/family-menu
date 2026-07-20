@@ -1,11 +1,12 @@
 // 老刘小炒 · 加速核心
-// 订单板：Gitee 国内私有仓库（可注册）+ 本机缓存
+// 订单板：jsonblob + 本机缓存 + 乐观更新（按钮先变，后台再同步）
 
-const IMG_VER = 'fast4';
+const IMG_VER = 'fast5';
 const REPO_CDN = 'https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/';
 const REPO_CDN2 = 'https://cdn.jsdelivr.net/gh/LoopBearConsole/family-menu@main/';
-const BOARD_LOCAL_KEY = 'laoliu_order_board_v3';
-const BOARD_CFG_KEY = 'laoliu_board_config_v2';
+const ORDER_BOARD_ID = '019f7956-dbdc-767d-9801-ae89afad20d8';
+const ORDER_BOARD_URL = 'https://jsonblob.com/api/jsonBlob/' + ORDER_BOARD_ID;
+const BOARD_LOCAL_KEY = 'laoliu_order_board_v4';
 
 function localBase(kind) {
   try {
@@ -97,71 +98,18 @@ function dishSteps(dish) {
     .map((s) => (/[。！？]$/.test(s) ? s : s + '。'));
 }
 
-// ---------------- 配置（Gitee 国内） ----------------
-
-function getBoardConfig() {
-  try {
-    const raw = localStorage.getItem(BOARD_CFG_KEY);
-    if (raw) {
-      const c = JSON.parse(raw);
-      if (c && c.gitee && c.gitee.owner && c.gitee.token) return c;
-    }
-  } catch (e) {}
-  if (typeof window !== 'undefined' && window.BOARD_CONFIG && window.BOARD_CONFIG.gitee) {
-    const g = window.BOARD_CONFIG.gitee;
-    if (g.owner && g.token) return window.BOARD_CONFIG;
-  }
-  return null;
-}
-
-function isCloudConfigured() {
-  const c = getBoardConfig();
-  return !!(c && c.gitee && c.gitee.owner && c.gitee.token && (c.gitee.repo || 'laoliu-board'));
-}
-
-function saveBoardConfig(cfg) {
-  localStorage.setItem(BOARD_CFG_KEY, JSON.stringify(cfg));
-  window.BOARD_CONFIG = cfg;
-}
-
-function clearBoardConfig() {
-  localStorage.removeItem(BOARD_CFG_KEY);
-}
-
-function giteeCfg() {
-  const c = getBoardConfig();
-  if (!c || !c.gitee) throw new Error('未配置 Gitee');
-  return {
-    owner: String(c.gitee.owner || '').trim(),
-    repo: String(c.gitee.repo || 'laoliu-board').trim() || 'laoliu-board',
-    token: String(c.gitee.token || '').trim(),
-    path: String(c.gitee.path || 'board.json').trim() || 'board.json',
-  };
-}
-
-function fetchWithTimeout(url, options, ms) {
-  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = setTimeout(function () {
-    if (ctrl) ctrl.abort();
-  }, ms || 15000);
-  const opts = Object.assign({}, options || {}, ctrl ? { signal: ctrl.signal } : {});
-  return fetch(url, opts).finally(function () {
-    clearTimeout(timer);
-  });
-}
-
-// ---------------- 本地缓存 ----------------
+// ---------------- 订单板 ----------------
 
 function readLocalBoard() {
   try {
     const raw = localStorage.getItem(BOARD_LOCAL_KEY);
-    if (!raw) return { orders: [], updatedAt: null, sha: null };
+    if (!raw) return { orders: [], updatedAt: null };
     const data = JSON.parse(raw);
-    if (!data || typeof data !== 'object') return { orders: [], updatedAt: null, sha: null };
+    if (!data || typeof data !== 'object') return { orders: [], updatedAt: null };
     if (!Array.isArray(data.orders)) data.orders = [];
     return data;
   } catch (e) {
-    return { orders: [], updatedAt: null, sha: null };
+    return { orders: [], updatedAt: null };
   }
 }
 
@@ -172,14 +120,13 @@ function writeLocalBoard(board) {
       JSON.stringify({
         orders: board.orders || [],
         updatedAt: board.updatedAt || new Date().toISOString(),
-        sha: board.sha || null,
       })
     );
   } catch (e) {}
 }
 
 function normalizeBoard(data) {
-  if (!data || typeof data !== 'object') return { orders: [], updatedAt: null, sha: null };
+  if (!data || typeof data !== 'object') return { orders: [], updatedAt: null };
   if (!Array.isArray(data.orders)) data.orders = [];
   return data;
 }
@@ -190,17 +137,31 @@ function boardTime(b) {
   return isNaN(t) ? 0 : t;
 }
 
+function orderTime(o, boardFallback) {
+  if (!o) return boardFallback || 0;
+  if (o.updatedAt) {
+    const t = Date.parse(o.updatedAt);
+    if (!isNaN(t)) return t;
+  }
+  if (o.ts) return Number(o.ts) || 0;
+  return boardFallback || 0;
+}
+
+// 按「单笔订单」时间合并，避免整板 updatedAt 把刚改的状态盖掉
 function mergeBoards(a, b) {
   const map = {};
-  const put = (o, srcTime) => {
+  const put = (o, boardFallback) => {
     if (!o || !o.id) return;
+    const t = orderTime(o, boardFallback);
     const prev = map[o.id];
-    if (!prev || srcTime >= (prev._t || 0)) {
-      map[o.id] = Object.assign({}, prev || {}, o, { _t: srcTime });
+    if (!prev || t >= (prev._t || 0)) {
+      map[o.id] = Object.assign({}, prev || {}, o, { _t: t });
     }
   };
-  (a.orders || []).forEach((o) => put(o, boardTime(a)));
-  (b.orders || []).forEach((o) => put(o, boardTime(b)));
+  const ta = boardTime(a);
+  const tb = boardTime(b);
+  (a.orders || []).forEach((o) => put(o, ta));
+  (b.orders || []).forEach((o) => put(o, tb));
   const orders = Object.values(map)
     .map((o) => {
       const x = Object.assign({}, o);
@@ -210,158 +171,64 @@ function mergeBoards(a, b) {
     .sort((x, y) => (y.ts || 0) - (x.ts || 0))
     .slice(0, 30);
   const updatedAt =
-    boardTime(a) >= boardTime(b) ? a.updatedAt || b.updatedAt : b.updatedAt || a.updatedAt;
-  return {
-    orders: orders,
-    updatedAt: updatedAt || new Date().toISOString(),
-    sha: (boardTime(a) >= boardTime(b) ? a.sha : b.sha) || a.sha || b.sha || null,
-  };
+    ta >= tb ? a.updatedAt || b.updatedAt : b.updatedAt || a.updatedAt;
+  return { orders: orders, updatedAt: updatedAt || new Date().toISOString() };
 }
 
-// ---------------- Gitee Contents API ----------------
-// https://gitee.com/api/v5/swagger
-
-function utf8ToBase64(str) {
-  // 浏览器安全 base64
-  return btoa(unescape(encodeURIComponent(str)));
-}
-
-function base64ToUtf8(b64) {
-  return decodeURIComponent(escape(atob(b64)));
-}
-
-async function giteeGetFile() {
-  const g = giteeCfg();
-  const url =
-    'https://gitee.com/api/v5/repos/' +
-    encodeURIComponent(g.owner) +
-    '/' +
-    encodeURIComponent(g.repo) +
-    '/contents/' +
-    g.path.replace(/^\//, '') +
-    '?access_token=' +
-    encodeURIComponent(g.token) +
-    '&t=' +
-    Date.now();
-  const res = await fetchWithTimeout(
-    url,
-    { method: 'GET', headers: { Accept: 'application/json' }, cache: 'no-store', mode: 'cors' },
-    15000
-  );
-  if (res.status === 404) {
-    return { orders: [], updatedAt: null, sha: null, _missing: true };
-  }
-  if (!res.ok) {
-    const t = await res.text().catch(function () {
-      return '';
-    });
-    throw new Error('Gitee 读取失败 HTTP ' + res.status + ' ' + t.slice(0, 160));
-  }
-  const meta = await res.json();
-  // content 可能被按 60 字符换行
-  const content = base64ToUtf8(String(meta.content || '').replace(/\n/g, ''));
-  let data;
-  try {
-    data = JSON.parse(content || '{}');
-  } catch (e) {
-    data = { orders: [], updatedAt: null };
-  }
-  data = normalizeBoard(data);
-  data.sha = meta.sha || null;
-  return data;
-}
-
-async function giteePutFile(board, sha) {
-  const g = giteeCfg();
-  const payload = {
-    orders: board.orders || [],
-    updatedAt: board.updatedAt || new Date().toISOString(),
-  };
-  const body = {
-    access_token: g.token,
-    content: utf8ToBase64(JSON.stringify(payload)),
-    message: 'update kitchen board ' + payload.updatedAt,
-    sha: sha || undefined,
-  };
-  // 无 sha 时创建文件；有 sha 时更新
-  if (!body.sha) delete body.sha;
-
-  const url =
-    'https://gitee.com/api/v5/repos/' +
-    encodeURIComponent(g.owner) +
-    '/' +
-    encodeURIComponent(g.repo) +
-    '/contents/' +
-    g.path.replace(/^\//, '');
-
-  const res = await fetchWithTimeout(
-    url,
-    {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json;charset=UTF-8', Accept: 'application/json' },
-      body: JSON.stringify(body),
-      mode: 'cors',
-      cache: 'no-store',
-    },
-    20000
-  );
-  if (!res.ok) {
-    const t = await res.text().catch(function () {
-      return '';
-    });
-    // 若冲突（sha 过期），抛出让上层重试
-    throw new Error('Gitee 写入失败 HTTP ' + res.status + ' ' + t.slice(0, 200));
-  }
-  const meta = await res.json();
-  const newSha = (meta.content && meta.content.sha) || (meta.commit && meta.commit.sha) || null;
-  return newSha;
+function fetchWithTimeout(url, options, ms) {
+  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = setTimeout(function () {
+    if (ctrl) ctrl.abort();
+  }, ms || 12000);
+  const opts = Object.assign({}, options || {}, ctrl ? { signal: ctrl.signal } : {});
+  return fetch(url, opts).finally(function () {
+    clearTimeout(timer);
+  });
 }
 
 async function fetchRemoteBoardOnce() {
-  if (!isCloudConfigured()) throw new Error('未配置 Gitee');
-  return await giteeGetFile();
+  const url = ORDER_BOARD_URL + '?_=' + Date.now();
+  const res = await fetchWithTimeout(
+    url,
+    {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+      mode: 'cors',
+      credentials: 'omit',
+    },
+    12000
+  );
+  if (!res.ok) throw new Error('读取失败 ' + res.status);
+  return normalizeBoard(await res.json());
 }
 
 async function putRemoteBoardOnce(board) {
-  if (!isCloudConfigured()) throw new Error('未配置 Gitee');
-  let sha = board.sha || null;
-  // 若没有 sha，先尝试 GET 一次
-  if (!sha) {
-    try {
-      const cur = await giteeGetFile();
-      sha = cur.sha || null;
-      if (cur.orders && cur.orders.length && !(board.orders && board.orders.length)) {
-        // 避免空写覆盖：合并
-        board = mergeBoards(cur, board);
-      }
-    } catch (e) {}
-  }
-  try {
-    const newSha = await giteePutFile(board, sha);
-    board.sha = newSha;
-    return true;
-  } catch (e) {
-    // sha 冲突则拉最新再写一次
-    const msg = String((e && e.message) || e);
-    if (/404|sha|409|400/i.test(msg)) {
-      const cur = await giteeGetFile();
-      const merged = mergeBoards(cur, board);
-      const newSha = await giteePutFile(merged, cur.sha || null);
-      board.orders = merged.orders;
-      board.updatedAt = merged.updatedAt;
-      board.sha = newSha;
-      return true;
-    }
-    throw e;
-  }
+  const body = JSON.stringify({
+    orders: board.orders || [],
+    updatedAt: board.updatedAt || new Date().toISOString(),
+  });
+  const res = await fetchWithTimeout(
+    ORDER_BOARD_URL,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json;charset=UTF-8',
+        Accept: 'application/json',
+      },
+      body: body,
+      mode: 'cors',
+      credentials: 'omit',
+      cache: 'no-store',
+    },
+    15000
+  );
+  if (!res.ok) throw new Error('写入失败 ' + res.status);
+  return true;
 }
 
 async function fetchOrderBoard() {
   const local = readLocalBoard();
-  if (!isCloudConfigured()) {
-    local._cloud = false;
-    return normalizeBoard(local);
-  }
   let remote = null;
   let remoteErr = null;
   for (let i = 0; i < 3; i++) {
@@ -372,20 +239,19 @@ async function fetchOrderBoard() {
     } catch (e) {
       remoteErr = e;
       await new Promise(function (r) {
-        setTimeout(r, 300 * (i + 1));
+        setTimeout(r, 250 * (i + 1));
       });
     }
   }
   if (remote) {
     const merged = mergeBoards(local, remote);
-    merged.sha = remote.sha || local.sha || null;
-    merged._cloud = true;
     writeLocalBoard(merged);
     return merged;
   }
-  if (local.orders && local.orders.length) {
-    local._cloud = false;
-    local._cloudError = String((remoteErr && remoteErr.message) || '云读取失败');
+  // 远程失败也返回本机，保证厨房能继续操作
+  if (local) {
+    local._remoteOk = false;
+    local._cloudError = String((remoteErr && remoteErr.message) || '');
     return normalizeBoard(local);
   }
   throw remoteErr || new Error('读取订单板失败');
@@ -395,52 +261,58 @@ async function saveOrderBoard(board) {
   const payload = {
     orders: board.orders || [],
     updatedAt: board.updatedAt || new Date().toISOString(),
-    sha: board.sha || null,
   };
+  // 永远先写本机：按钮立刻生效
   writeLocalBoard(payload);
-  if (!isCloudConfigured()) {
-    payload._remoteOk = false;
-    payload._cloud = false;
-    return false;
-  }
   let lastErr = null;
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 3; i++) {
     try {
       await putRemoteBoardOnce(payload);
-      writeLocalBoard(payload);
-      payload._remoteOk = true;
-      payload._cloud = true;
       return true;
     } catch (e) {
       lastErr = e;
       await new Promise(function (r) {
-        setTimeout(r, 450 * (i + 1));
+        setTimeout(r, 400 * (i + 1));
       });
     }
   }
-  console.warn('Gitee 同步失败，已写本机', lastErr);
-  payload._remoteOk = false;
-  payload._cloudError = String((lastErr && lastErr.message) || '同步失败');
+  console.warn('远程同步失败（本机已保存）', lastErr);
   return false;
 }
 
+// 本机先改 → 再尽量跟远程合并并写回。不因远程失败而抛错。
 async function mutateBoard(mutator) {
-  let board;
+  const now = new Date().toISOString();
+  // 1) 立刻改本机（深拷贝后再改，避免污染引用）
+  const local = normalizeBoard(readLocalBoard());
+  const cloned = {
+    orders: (local.orders || []).map(function (o) {
+      return Object.assign({}, o);
+    }),
+    updatedAt: local.updatedAt,
+  };
+  const next = mutator(cloned);
+  next.updatedAt = now;
+  writeLocalBoard(next);
+
+  // 2) 拉远程合并：按单笔订单 updatedAt 合并，刚改的状态不会被旧板盖掉
+  let toSave = next;
   try {
-    board = await fetchOrderBoard();
+    const remote = await fetchRemoteBoardOnce();
+    toSave = mergeBoards(next, remote);
+    toSave.updatedAt = new Date().toISOString();
+    writeLocalBoard(toSave);
   } catch (e) {
-    board = readLocalBoard();
+    // 远程读失败：继续用本机结果去写
   }
-  const next = mutator(normalizeBoard(board));
-  next.updatedAt = new Date().toISOString();
-  next.sha = board.sha || next.sha || null;
-  const ok = await saveOrderBoard(next);
-  next._remoteOk = ok;
-  next._cloud = isCloudConfigured();
-  return next;
+
+  const ok = await saveOrderBoard(toSave);
+  toSave._remoteOk = ok;
+  return toSave;
 }
 
 async function pushKitchenOrder(order) {
+  if (order && !order.updatedAt) order.updatedAt = new Date().toISOString();
   return mutateBoard(function (board) {
     board.orders = Array.isArray(board.orders) ? board.orders : [];
     board.orders.unshift(order);
@@ -450,33 +322,42 @@ async function pushKitchenOrder(order) {
 }
 
 async function updateKitchenOrderStatus(orderId, status) {
+  const stamp = new Date().toISOString();
   return mutateBoard(function (board) {
     board.orders = (board.orders || []).map(function (o) {
-      return o.id === orderId ? Object.assign({}, o, { status: status }) : o;
+      if (o.id !== orderId) return o;
+      return Object.assign({}, o, { status: status, updatedAt: stamp });
     });
     return board;
   });
 }
 
 async function clearDoneKitchenOrders() {
-  return mutateBoard(function (board) {
-    board.orders = (board.orders || []).filter(function (o) {
-      return o.status !== 'done';
-    });
-    return board;
+  // 清理已完成：合并远程后再过滤，避免只清本机又被远程 done 单加回来
+  let base = normalizeBoard(readLocalBoard());
+  try {
+    const remote = await fetchRemoteBoardOnce();
+    base = mergeBoards(base, remote);
+  } catch (e) {}
+  base.orders = (base.orders || []).filter(function (o) {
+    return o.status !== 'done';
   });
+  base.updatedAt = new Date().toISOString();
+  const ok = await saveOrderBoard(base);
+  base._remoteOk = ok;
+  return base;
 }
 
-/** 测试：读/写 board.json */
+// 兼容旧页面可能调用的配置函数（已不再需要云配置）
+function isCloudConfigured() {
+  return true;
+}
+function getBoardConfig() {
+  return { provider: 'jsonblob' };
+}
+function saveBoardConfig() {}
+function clearBoardConfig() {}
 async function testCloudConnection() {
-  if (!isCloudConfigured()) throw new Error('请先填写 Gitee 用户名、仓库名、私人令牌');
-  const cur = await giteeGetFile();
-  const board = {
-    orders: cur.orders || [],
-    updatedAt: new Date().toISOString(),
-    sha: cur.sha || null,
-  };
-  // 若文件不存在，创建；存在则 touch 更新时间
-  await putRemoteBoardOnce(board);
+  await fetchRemoteBoardOnce();
   return true;
 }
