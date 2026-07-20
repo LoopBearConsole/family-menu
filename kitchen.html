@@ -176,35 +176,34 @@
 
   <div id="cloudBanner" style="display:none;max-width:720px;margin:12px auto 0;padding:0 12px">
     <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:12px 14px;font-size:13px;color:#9a3412;line-height:1.55">
-      <b>尚未配置国内云同步</b>：现在只能本机缓存，两台手机无法互通。<br>
-      免费 2 分钟开通 LeanCloud 后，点右上角「配置同步」。
+      <b>尚未配置国内云同步（Gitee 码云）</b>：现在只能本机缓存，两台手机无法互通。<br>
+      Gitee 国内可免费注册，约 3 分钟配好。点「配置同步」。
       <div style="margin-top:8px">
         <button type="button" onclick="openCloudSetup()" style="border:0;background:#ea580c;color:#fff;border-radius:999px;padding:8px 14px;font-weight:700;font-size:12px">立即配置</button>
       </div>
     </div>
   </div>
 
-  <!-- 国内云配置弹窗 -->
+  <!-- 国内云配置弹窗：Gitee -->
   <div id="cloudMask" style="display:none;position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.5);align-items:flex-end;justify-content:center;padding:0">
     <div style="width:100%;max-width:520px;max-height:92vh;overflow:auto;background:#fff;border-radius:18px 18px 0 0;padding:18px 16px 28px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <h2 style="font-size:18px">国内云同步（LeanCloud 免费）</h2>
+        <h2 style="font-size:18px">国内云同步（Gitee 免费）</h2>
         <button type="button" onclick="closeCloudSetup()" style="border:0;background:#f5f5f4;width:32px;height:32px;border-radius:999px;font-size:18px">&times;</button>
       </div>
       <ol style="font-size:13px;color:#44403c;line-height:1.7;padding-left:18px;margin-bottom:12px">
-        <li>打开 <a href="https://console.leancloud.cn" target="_blank" rel="noopener">console.leancloud.cn</a> 注册/登录</li>
-        <li>创建应用 → 选<strong>开发版（免费）</strong></li>
-        <li>设置 → 应用凭证 → 复制 <b>AppID、AppKey</b></li>
-        <li>复制 <b>服务器地址 / REST API 服务器地址</b>（形如 https://xxx.lc-cn-n1-shared.com）</li>
-        <li>粘贴到下方，点「保存并测试」</li>
-        <li>客厅手机同样配置一次（或点「生成配置码」互扫）</li>
+        <li>打开 <a href="https://gitee.com" target="_blank" rel="noopener">gitee.com</a> 注册/登录（国内码云，一般可注册）</li>
+        <li>右上角 <b>+</b> → 新建仓库 → 勾选<strong>私有</strong> → 名称填 <code>laoliu-board</code> → 创建（空仓库即可）</li>
+        <li>头像 → 设置 → <b>私人令牌</b> → 生成新令牌 → 勾选 <b>projects</b> → 提交后<strong>立刻复制令牌</strong></li>
+        <li>把下方三项填好 → 点「保存并测试」</li>
+        <li>客厅手机同样配置，或点「生成配置码」让另一台扫</li>
       </ol>
-      <label style="font-size:12px;color:#78716c">AppID</label>
-      <input id="cfgAppId" style="width:100%;margin:4px 0 10px;padding:10px;border:1px solid #e7e5e4;border-radius:10px;font-size:13px" placeholder="AppID" />
-      <label style="font-size:12px;color:#78716c">AppKey</label>
-      <input id="cfgAppKey" style="width:100%;margin:4px 0 10px;padding:10px;border:1px solid #e7e5e4;border-radius:10px;font-size:13px" placeholder="AppKey" />
-      <label style="font-size:12px;color:#78716c">服务器地址 serverURL</label>
-      <input id="cfgServer" style="width:100%;margin:4px 0 12px;padding:10px;border:1px solid #e7e5e4;border-radius:10px;font-size:13px" placeholder="https://xxxx.lc-cn-n1-shared.com" />
+      <label style="font-size:12px;color:#78716c">Gitee 用户名（个人主页地址里的名字）</label>
+      <input id="cfgOwner" style="width:100%;margin:4px 0 10px;padding:10px;border:1px solid #e7e5e4;border-radius:10px;font-size:13px" placeholder="例如 zhangsan" autocomplete="username" />
+      <label style="font-size:12px;color:#78716c">仓库名</label>
+      <input id="cfgRepo" style="width:100%;margin:4px 0 10px;padding:10px;border:1px solid #e7e5e4;border-radius:10px;font-size:13px" placeholder="laoliu-board" value="laoliu-board" />
+      <label style="font-size:12px;color:#78716c">私人令牌 access_token</label>
+      <input id="cfgToken" type="password" style="width:100%;margin:4px 0 12px;padding:10px;border:1px solid #e7e5e4;border-radius:10px;font-size:13px" placeholder="粘贴私人令牌" autocomplete="off" />
       <div style="display:flex;flex-wrap:wrap;gap:8px">
         <button type="button" onclick="saveCloudSetup()" style="flex:1;min-width:120px;border:0;background:#059669;color:#fff;border-radius:12px;padding:12px;font-weight:700">保存并测试</button>
         <button type="button" onclick="exportConfigQR()" style="flex:1;min-width:120px;border:1px solid #d6d3d1;background:#fff;border-radius:12px;padding:12px;font-weight:600">生成配置码</button>
@@ -212,14 +211,16 @@
       </div>
       <p id="cfgMsg" style="font-size:12px;color:#78716c;margin-top:10px;line-height:1.5"></p>
       <div id="cfgQrBox" style="display:none;text-align:center;margin-top:12px">
-        <p style="font-size:12px;color:#57534e;margin-bottom:8px">另一台手机扫描此码，自动写入同一套配置</p>
+        <p style="font-size:12px;color:#57534e;margin-bottom:8px">另一台手机用厨房页「导入配置」或扫此码（也可复制下方文本）</p>
         <div id="cfgQr" style="display:inline-block;background:#fff;padding:8px;border-radius:12px;border:1px solid #e7e5e4"></div>
+        <p id="cfgText" style="font-size:10px;color:#a8a29e;word-break:break-all;margin-top:8px;text-align:left"></p>
       </div>
       <div style="margin-top:14px;padding-top:12px;border-top:1px solid #f5f5f4">
-        <label style="font-size:12px;color:#78716c">或粘贴配置码内容导入</label>
+        <label style="font-size:12px;color:#78716c">或粘贴配置文本导入</label>
         <input id="cfgImport" style="width:100%;margin:4px 0 8px;padding:10px;border:1px solid #e7e5e4;border-radius:10px;font-size:12px" placeholder="laoliu-cfg:..." />
         <button type="button" onclick="importConfigText()" style="border:0;background:#0f766e;color:#fff;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700">导入配置</button>
       </div>
+      <p style="font-size:11px;color:#a8a29e;margin-top:12px;line-height:1.5">令牌只存在本机浏览器，不会上传到 GitHub 菜单仓库。请勿把令牌发到公开群。</p>
     </div>
   </div>
 
@@ -254,9 +255,9 @@
     <a href="./">返回客厅点餐页</a>
   </footer>
 
-  <script src="board-config.js?v=cn1"></script>
-  <script src="core.js?v=cn1"></script>
-  <script src="dishes-lite.js?v=cn1"></script>
+  <script src="board-config.js?v=gitee1"></script>
+  <script src="core.js?v=gitee1"></script>
+  <script src="dishes-lite.js?v=gitee1"></script>
   <script src="https://cdn.jsdmirror.com/npm/qrcodejs@1.0.0/qrcode.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js'"></script>
   <script>
     let board = { orders: [], updatedAt: null };
@@ -499,13 +500,13 @@
       mask.style.justifyContent = 'flex-end';
       mask.style.alignItems = 'center';
       const cfg = (typeof getBoardConfig === 'function' && getBoardConfig()) || (window.BOARD_CONFIG || {});
-      const lc = (cfg && cfg.leancloud) || {};
-      document.getElementById('cfgAppId').value = lc.appId || '';
-      document.getElementById('cfgAppKey').value = lc.appKey || '';
-      document.getElementById('cfgServer').value = lc.serverURL || '';
+      const g = (cfg && cfg.gitee) || {};
+      document.getElementById('cfgOwner').value = g.owner || '';
+      document.getElementById('cfgRepo').value = g.repo || 'laoliu-board';
+      document.getElementById('cfgToken').value = g.token || '';
       document.getElementById('cfgMsg').textContent = isCloudConfigured()
         ? '已配置。可点「保存并测试」验证，或生成配置码给另一台手机。'
-        : '按上面步骤开通免费 LeanCloud 后填写。';
+        : '按上面步骤用 Gitee（码云）配置，国内一般可注册。';
       document.getElementById('cfgQrBox').style.display = 'none';
     }
 
@@ -514,29 +515,31 @@
     }
 
     async function saveCloudSetup() {
-      const appId = document.getElementById('cfgAppId').value.trim();
-      const appKey = document.getElementById('cfgAppKey').value.trim();
-      let serverURL = document.getElementById('cfgServer').value.trim();
+      const owner = document.getElementById('cfgOwner').value.trim();
+      const repo = document.getElementById('cfgRepo').value.trim() || 'laoliu-board';
+      const token = document.getElementById('cfgToken').value.trim();
       const msg = document.getElementById('cfgMsg');
-      if (!appId || !appKey || !serverURL) {
-        msg.textContent = '请填完整三项';
+      if (!owner || !token) {
+        msg.textContent = '请填写用户名和私人令牌';
         msg.style.color = '#b91c1c';
         return;
       }
-      if (!/^https?:\/\//i.test(serverURL)) serverURL = 'https://' + serverURL;
-      serverURL = serverURL.replace(/\/+$/, '');
-      const cfg = { provider: 'leancloud', leancloud: { appId: appId, appKey: appKey, serverURL: serverURL } };
+      const cfg = {
+        provider: 'gitee',
+        gitee: { owner: owner, repo: repo, token: token, path: 'board.json' }
+      };
       saveBoardConfig(cfg);
-      msg.textContent = '已保存，正在测试连接…';
+      msg.textContent = '已保存，正在测试连接（会在仓库创建 board.json）…';
       msg.style.color = '#57534e';
       try {
         await testCloudConnection();
-        msg.textContent = '连接成功！客厅手机请用同样配置（或生成配置码互扫）。';
+        msg.textContent = '连接成功！客厅手机请同样配置（或生成配置码）。';
         msg.style.color = '#047857';
         updateCloudBanner();
         refreshBoard(true);
       } catch (e) {
-        msg.textContent = '保存了，但测试失败：' + (e && e.message ? e.message : e) + '。请检查三项是否复制完整、应用是否为开发版。';
+        msg.textContent = '测试失败：' + (e && e.message ? e.message : e) +
+          '。请检查：仓库是否私有已创建、用户名是否正确、令牌是否勾选 projects 且未过期。';
         msg.style.color = '#b91c1c';
       }
     }
@@ -544,9 +547,9 @@
     function clearCloudSetup() {
       if (!confirm('确定清除本机云配置？')) return;
       clearBoardConfig();
-      document.getElementById('cfgAppId').value = '';
-      document.getElementById('cfgAppKey').value = '';
-      document.getElementById('cfgServer').value = '';
+      document.getElementById('cfgOwner').value = '';
+      document.getElementById('cfgRepo').value = 'laoliu-board';
+      document.getElementById('cfgToken').value = '';
       document.getElementById('cfgMsg').textContent = '已清除';
       document.getElementById('cfgQrBox').style.display = 'none';
       updateCloudBanner();
@@ -555,24 +558,22 @@
     function exportConfigQR() {
       const cfg = getBoardConfig();
       const msg = document.getElementById('cfgMsg');
-      if (!cfg || !cfg.leancloud || !cfg.leancloud.appId) {
+      if (!cfg || !cfg.gitee || !cfg.gitee.owner || !cfg.gitee.token) {
         msg.textContent = '请先保存配置，再生成配置码';
         msg.style.color = '#b91c1c';
         return;
       }
-      const text = 'laoliu-cfg:' + btoa(unescape(encodeURIComponent(JSON.stringify(cfg.leancloud))));
+      const text = 'laoliu-cfg:' + btoa(unescape(encodeURIComponent(JSON.stringify(cfg.gitee))));
       document.getElementById('cfgQrBox').style.display = 'block';
+      document.getElementById('cfgText').textContent = text;
       const box = document.getElementById('cfgQr');
       box.innerHTML = '';
       if (typeof QRCode !== 'undefined') {
         new QRCode(box, { text: text, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
       } else {
-        box.textContent = text;
-        box.style.wordBreak = 'break-all';
-        box.style.fontSize = '10px';
-        box.style.maxWidth = '260px';
+        box.textContent = '（二维码库未加载，请复制下方文本）';
       }
-      msg.textContent = '配置码已生成。也可用下方「导入配置」粘贴：' + text.slice(0, 40) + '…';
+      msg.textContent = '配置码已生成。另一台手机在配置页粘贴导入即可。';
       msg.style.color = '#047857';
     }
 
@@ -584,11 +585,11 @@
         if (raw.indexOf('laoliu-cfg:') === 0) {
           json = decodeURIComponent(escape(atob(raw.slice('laoliu-cfg:'.length))));
         }
-        const lc = JSON.parse(json);
-        if (!lc.appId || !lc.appKey || !lc.serverURL) throw new Error('字段不完整');
-        document.getElementById('cfgAppId').value = lc.appId;
-        document.getElementById('cfgAppKey').value = lc.appKey;
-        document.getElementById('cfgServer').value = lc.serverURL;
+        const g = JSON.parse(json);
+        if (!g.owner || !g.token) throw new Error('字段不完整');
+        document.getElementById('cfgOwner').value = g.owner;
+        document.getElementById('cfgRepo').value = g.repo || 'laoliu-board';
+        document.getElementById('cfgToken').value = g.token;
         msg.textContent = '已填入，请点「保存并测试」';
         msg.style.color = '#047857';
       } catch (e) {

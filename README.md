@@ -12,16 +12,18 @@
 > 不要用 `cdn.jsdmirror.com/.../index.html` 当网址打开——  
 > 镜像会把 HTML 当**纯文本**返回，浏览器会显示源码，不是网页。
 
-### 国内云同步（LeanCloud 免费，两台手机互通）
+### 国内云同步（Gitee 码云，免费可注册）
 
-1. 打开 [LeanCloud 控制台](https://console.leancloud.cn) 注册，创建**开发版**应用  
-2. 复制 **AppID、AppKey、服务器地址（serverURL）**  
-3. 打开厨房页 → 点 **「配置同步」** → 粘贴三项 → **保存并测试**  
-4. 点 **「生成配置码」**，客厅手机扫码导入同一套配置（或两台都手填）  
+LeanCloud 若无法注册新用户，请用 **Gitee**：
 
-配置后：客厅下单 ↔ 厨房自动刷新；「开始做 / 做完了」可正常同步。
+1. 打开 [gitee.com](https://gitee.com) 注册/登录  
+2. 新建**私有**仓库，名称 `laoliu-board`（空仓库即可）  
+3. 设置 → 私人令牌 → 生成（勾选 **projects**）→ 复制令牌  
+4. 打开厨房页 → **配置同步** → 填入：用户名、仓库名、令牌 → **保存并测试**  
+5. 客厅手机同样配置，或用「生成配置码」互拷  
 
-也可编辑仓库里的 `board-config.js` 后 `git push`。
+配置后：客厅下单 ↔ 厨房约 3 秒自动刷新；状态按钮可同步。  
+令牌只存在手机浏览器本地，不会提交到 GitHub 菜单仓库。
 
 菜谱来源：[Anduin2017/HowToCook](https://github.com/Anduin2017/HowToCook)（MIT）
 

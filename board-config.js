@@ -1,21 +1,18 @@
-// 老刘小炒 · 国内云同步配置（LeanCloud 免费版）
-// 在厨房页点「配置同步」可图形化填写，会自动写到本机；
-// 两台手机需使用同一套 AppId / AppKey / 服务器地址。
+// 老刘小炒 · 国内云同步配置
+// 推荐：Gitee（码云）免费私有仓库 — 国内可注册
+// 在厨房页点「配置同步」填写即可（保存在手机本地，不会强制提交到 GitHub）
 //
-// 免费开通（约 2 分钟）：
-// 1. 打开 https://console.leancloud.cn 注册/登录
-// 2. 创建应用 → 开发版（免费）
-// 3. 应用 → 设置 → 应用凭证 → 复制 AppID、AppKey
-// 4. 同一页复制「服务器地址 / REST API 服务器地址」
-// 5. 粘贴到厨房页「配置同步」里保存
-//
-// 也可直接改下面三项后 git push（AppKey 是客户端密钥，可放前端）
+// 快速开通：
+// 1. https://gitee.com 注册/登录
+// 2. 右上角 + → 新建仓库 → 私有 → 名称填 laoliu-board（空仓库即可）
+// 3. 右上角头像 → 设置 → 私人令牌 → 生成令牌（勾选 projects）
+// 4. 厨房页「配置同步」填入：用户名、仓库名、私人令牌
 window.BOARD_CONFIG = {
-  provider: 'leancloud',
-  leancloud: {
-    appId: '',
-    appKey: '',
-    // 例：https://xxx.lc-cn-n1-shared.com  或控制台显示的 serverURL
-    serverURL: ''
+  provider: 'gitee',
+  gitee: {
+    owner: '',      // 你的 Gitee 用户名
+    repo: 'laoliu-board',
+    token: '',      // 私人令牌（只存在本机 localStorage 更安全）
+    path: 'board.json'
   }
 };
