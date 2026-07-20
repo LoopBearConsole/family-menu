@@ -1,6 +1,7 @@
-// 老刘小炒 · 加速核�?// 订单板：jsonblob + 本机缓存 + 乐观更新（按钮先变，后台再同步）
+// 老刘小炒 · 加速核心
+// 订单板：jsonblob + 本机缓存 + 乐观更新（按钮先变，后台再同步）
 
-const IMG_VER = 'imgfix23c';
+const IMG_VER = 'imgfix23d';
 const REPO_CDN = 'https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/';
 const REPO_CDN2 = 'https://cdn.jsdelivr.net/gh/LoopBearConsole/family-menu@main/';
 const ORDER_BOARD_ID = '019f7956-dbdc-767d-9801-ae89afad20d8';
@@ -52,7 +53,7 @@ function onImgError(el, id, thumb) {
   if (wrap && !wrap.querySelector('.img-fallback')) {
     const div = document.createElement('div');
     div.className = 'img-fallback';
-    div.textContent = (el.alt || (d && d.name) || '�?).slice(0, 1);
+    div.textContent = (el.alt || (d && d.name) || '菜').slice(0, 1);
     wrap.appendChild(div);
   }
 }
@@ -94,10 +95,10 @@ function dishSteps(dish) {
     .split(/[。！？；\n]/)
     .map((s) => s.trim())
     .filter(Boolean)
-    .map((s) => (/[。！？]$/.test(s) ? s : s + '�?));
+    .map((s) => (/[。！？]$/.test(s) ? s : s + '。'));
 }
 
-// ---------------- 订单�?----------------
+// ---------------- 订单板 ----------------
 
 function readLocalBoard() {
   try {
@@ -146,7 +147,8 @@ function orderTime(o, boardFallback) {
   return boardFallback || 0;
 }
 
-// 按「单笔订单」时间合并，避免整板 updatedAt 把刚改的状态盖�?function mergeBoards(a, b) {
+// 按单笔订单时间合并，避免整板 updatedAt 把刚改的状态盖掉
+function mergeBoards(a, b) {
   const map = {};
   const put = (o, boardFallback) => {
     if (!o || !o.id) return;
@@ -197,7 +199,7 @@ async function fetchRemoteBoardOnce() {
     },
     12000
   );
-  if (!res.ok) throw new Error('读取失败 ' + res.status);
+  if (!res.ok) throw new Error('read fail ' + res.status);
   return normalizeBoard(await res.json());
 }
 
@@ -221,7 +223,7 @@ async function putRemoteBoardOnce(board) {
     },
     15000
   );
-  if (!res.ok) throw new Error('写入失败 ' + res.status);
+  if (!res.ok) throw new Error('write fail ' + res.status);
   return true;
 }
 
@@ -246,12 +248,13 @@ async function fetchOrderBoard() {
     writeLocalBoard(merged);
     return merged;
   }
-  // 远程失败也返回本机，保证厨房能继续操�?  if (local) {
+  // 远程失败也返回本机
+  if (local) {
     local._remoteOk = false;
     local._cloudError = String((remoteErr && remoteErr.message) || '');
     return normalizeBoard(local);
   }
-  throw remoteErr || new Error('读取订单板失�?);
+  throw remoteErr || new Error('fetch board fail');
 }
 
 async function saveOrderBoard(board) {
@@ -259,7 +262,8 @@ async function saveOrderBoard(board) {
     orders: board.orders || [],
     updatedAt: board.updatedAt || new Date().toISOString(),
   };
-  // 永远先写本机：按钮立刻生�?  writeLocalBoard(payload);
+  // 永远先写本机
+  writeLocalBoard(payload);
   let lastErr = null;
   for (let i = 0; i < 3; i++) {
     try {
@@ -272,13 +276,13 @@ async function saveOrderBoard(board) {
       });
     }
   }
-  console.warn('远程同步失败（本机已保存�?, lastErr);
+  console.warn('remote sync fail (local saved)', lastErr);
   return false;
 }
 
-// 本机先改 �?再尽量跟远程合并并写回。不因远程失败而抛错�?async function mutateBoard(mutator) {
+// 本机先改，再尽量跟远程合并并写回；不因远程失败而抛错
+async function mutateBoard(mutator) {
   const now = new Date().toISOString();
-  // 1) 立刻改本机（深拷贝后再改，避免污染引用）
   const local = normalizeBoard(readLocalBoard());
   const cloned = {
     orders: (local.orders || []).map(function (o) {
@@ -290,7 +294,6 @@ async function saveOrderBoard(board) {
   next.updatedAt = now;
   writeLocalBoard(next);
 
-  // 2) 拉远程合并：按单笔订�?updatedAt 合并，刚改的状态不会被旧板盖掉
   let toSave = next;
   try {
     const remote = await fetchRemoteBoardOnce();
@@ -298,7 +301,8 @@ async function saveOrderBoard(board) {
     toSave.updatedAt = new Date().toISOString();
     writeLocalBoard(toSave);
   } catch (e) {
-    // 远程读失败：继续用本机结果去�?  }
+    // keep local
+  }
 
   const ok = await saveOrderBoard(toSave);
   toSave._remoteOk = ok;
@@ -327,7 +331,6 @@ async function updateKitchenOrderStatus(orderId, status) {
 }
 
 async function clearDoneKitchenOrders() {
-  // 清理已完成：合并远程后再过滤，避免只清本机又被远�?done 单加回来
   let base = normalizeBoard(readLocalBoard());
   try {
     const remote = await fetchRemoteBoardOnce();
@@ -342,7 +345,7 @@ async function clearDoneKitchenOrders() {
   return base;
 }
 
-// 兼容旧页面可能调用的配置函数（已不再需要云配置�?function isCloudConfigured() {
+function isCloudConfigured() {
   return true;
 }
 function getBoardConfig() {
