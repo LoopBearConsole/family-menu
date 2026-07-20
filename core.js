@@ -1,11 +1,13 @@
 // 老刘小炒 · 加速核心（轻量）
-// HTML 入口必须用 github.io（能当网页打开）
-// 图片/JS/详情 优先走国内 CDN 镜像
-const ORDER_BOARD_ID = '019f7956-dbdc-767d-9801-ae89afad20d8';
-const ORDER_BOARD_URL = 'https://jsonblob.com/api/jsonBlob/' + ORDER_BOARD_ID;
-const IMG_VER = 'fast2';
+// 订单板：优先 LeanCloud 国内云；未配置时本机缓存 + 提示配置
+
+const IMG_VER = 'fast3';
 const REPO_CDN = 'https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/';
 const REPO_CDN2 = 'https://cdn.jsdelivr.net/gh/LoopBearConsole/family-menu@main/';
+const BOARD_LOCAL_KEY = 'laoliu_order_board_v2';
+const BOARD_CFG_KEY = 'laoliu_board_config_v1';
+const BOARD_CLASS = 'KitchenBoard';
+const BOARD_ROW_KEY = 'main';
 
 function localBase(kind) {
   try {
@@ -23,12 +25,7 @@ function localBase(kind) {
 }
 
 function cdnBases(kind) {
-  // 国内镜像优先 → jsdelivr → 本站
-  return [
-    REPO_CDN + kind + '/',
-    REPO_CDN2 + kind + '/',
-    localBase(kind),
-  ];
+  return [REPO_CDN + kind + '/', REPO_CDN2 + kind + '/', localBase(kind)];
 }
 
 function imgOf(id, thumb) {
@@ -102,12 +99,72 @@ function dishSteps(dish) {
     .map((s) => (/[。！？]$/.test(s) ? s : s + '。'));
 }
 
-// ---------- 订单板：远程 + 本地缓存 + 重试（解决厨房不刷新/按钮失败）----------
-const BOARD_LOCAL_KEY = 'laoliu_order_board_v1';
-const BOARD_URLS = [
-  // 主：jsonblob（带时间戳防缓存）
-  ORDER_BOARD_URL,
-];
+// ---------------- 国内云：LeanCloud 配置 ----------------
+
+function getBoardConfig() {
+  // 优先本机配置（配置向导写入），其次 board-config.js
+  try {
+    const raw = localStorage.getItem(BOARD_CFG_KEY);
+    if (raw) {
+      const c = JSON.parse(raw);
+      if (c && c.leancloud && c.leancloud.appId && c.leancloud.appKey && c.leancloud.serverURL) {
+        return c;
+      }
+    }
+  } catch (e) {}
+  if (typeof window !== 'undefined' && window.BOARD_CONFIG && window.BOARD_CONFIG.leancloud) {
+    const lc = window.BOARD_CONFIG.leancloud;
+    if (lc.appId && lc.appKey && lc.serverURL) return window.BOARD_CONFIG;
+  }
+  return null;
+}
+
+function isCloudConfigured() {
+  const c = getBoardConfig();
+  return !!(c && c.leancloud && c.leancloud.appId && c.leancloud.appKey && c.leancloud.serverURL);
+}
+
+function saveBoardConfig(cfg) {
+  localStorage.setItem(BOARD_CFG_KEY, JSON.stringify(cfg));
+  window.BOARD_CONFIG = cfg;
+}
+
+function clearBoardConfig() {
+  localStorage.removeItem(BOARD_CFG_KEY);
+}
+
+function leanBase() {
+  const c = getBoardConfig();
+  if (!c) throw new Error('未配置国内云');
+  let base = String(c.leancloud.serverURL || '').replace(/\/+$/, '');
+  if (!base) throw new Error('缺少 serverURL');
+  // 兼容只填了 host 的情况
+  if (!/^https?:\/\//i.test(base)) base = 'https://' + base;
+  return base;
+}
+
+function leanHeaders() {
+  const c = getBoardConfig();
+  return {
+    'X-LC-Id': c.leancloud.appId,
+    'X-LC-Key': c.leancloud.appKey,
+    'Content-Type': 'application/json;charset=UTF-8',
+    Accept: 'application/json',
+  };
+}
+
+function fetchWithTimeout(url, options, ms) {
+  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = setTimeout(function () {
+    if (ctrl) ctrl.abort();
+  }, ms || 12000);
+  const opts = Object.assign({}, options || {}, ctrl ? { signal: ctrl.signal } : {});
+  return fetch(url, opts).finally(function () {
+    clearTimeout(timer);
+  });
+}
+
+// ---------------- 本地缓存 ----------------
 
 function readLocalBoard() {
   try {
@@ -135,7 +192,7 @@ function writeLocalBoard(board) {
 }
 
 function normalizeBoard(data) {
-  if (!data || typeof data !== 'object') return { orders: [], updatedAt: null };
+  if (!data || typeof data !== 'object') return { orders: [], updatedAt: null, objectId: null };
   if (!Array.isArray(data.orders)) data.orders = [];
   return data;
 }
@@ -146,19 +203,14 @@ function boardTime(b) {
   return isNaN(t) ? 0 : t;
 }
 
-/** 合并两份订单板：按订单 id 合并，status 取“更新时间更新”的一侧；新订单都保留 */
 function mergeBoards(a, b) {
   const map = {};
   const put = (o, srcTime) => {
     if (!o || !o.id) return;
     const prev = map[o.id];
-    if (!prev) {
-      map[o.id] = Object.assign({}, o, { _t: srcTime });
-      return;
+    if (!prev || srcTime >= (prev._t || 0)) {
+      map[o.id] = Object.assign({}, prev || {}, o, { _t: srcTime });
     }
-    // 同 id：优先 status 变更时间较新；否则用 srcTime
-    const pt = prev._t || 0;
-    if (srcTime >= pt) map[o.id] = Object.assign({}, prev, o, { _t: srcTime });
   };
   (a.orders || []).forEach((o) => put(o, boardTime(a)));
   (b.orders || []).forEach((o) => put(o, boardTime(b)));
@@ -172,68 +224,121 @@ function mergeBoards(a, b) {
     .slice(0, 30);
   const updatedAt =
     boardTime(a) >= boardTime(b) ? a.updatedAt || b.updatedAt : b.updatedAt || a.updatedAt;
-  return { orders: orders, updatedAt: updatedAt || new Date().toISOString() };
+  return {
+    orders: orders,
+    updatedAt: updatedAt || new Date().toISOString(),
+    objectId: (boardTime(a) >= boardTime(b) ? a.objectId : b.objectId) || a.objectId || b.objectId || null,
+  };
 }
 
-function fetchWithTimeout(url, options, ms) {
-  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = setTimeout(function () {
-    if (ctrl) ctrl.abort();
-  }, ms || 12000);
-  const opts = Object.assign({}, options || {}, ctrl ? { signal: ctrl.signal } : {});
-  return fetch(url, opts).finally(function () {
-    clearTimeout(timer);
+// ---------------- LeanCloud CRUD ----------------
+
+async function leanFindMainRow() {
+  const where = encodeURIComponent(JSON.stringify({ key: BOARD_ROW_KEY }));
+  const url = leanBase() + '/1.1/classes/' + BOARD_CLASS + '?where=' + where + '&limit=1';
+  const res = await fetchWithTimeout(
+    url,
+    { method: 'GET', headers: leanHeaders(), mode: 'cors', credentials: 'omit', cache: 'no-store' },
+    12000
+  );
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error('查询失败 HTTP ' + res.status + ' ' + t.slice(0, 120));
+  }
+  const data = await res.json();
+  const results = (data && data.results) || [];
+  if (!results.length) return null;
+  const row = results[0];
+  return {
+    objectId: row.objectId,
+    orders: Array.isArray(row.orders) ? row.orders : [],
+    updatedAt: row.updatedAtBoard || row.updatedAt || null,
+  };
+}
+
+async function leanCreateMainRow(board) {
+  const url = leanBase() + '/1.1/classes/' + BOARD_CLASS;
+  const body = JSON.stringify({
+    key: BOARD_ROW_KEY,
+    orders: board.orders || [],
+    updatedAtBoard: board.updatedAt || new Date().toISOString(),
   });
-}
-
-async function fetchRemoteBoardOnce() {
-  // 防缓存：加时间戳
-  const url = ORDER_BOARD_URL + (ORDER_BOARD_URL.indexOf('?') >= 0 ? '&' : '?') + '_=' + Date.now();
   const res = await fetchWithTimeout(
     url,
     {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-      cache: 'no-store',
-      mode: 'cors',
-      credentials: 'omit',
-    },
-    12000
-  );
-  if (!res.ok) throw new Error('读取失败 HTTP ' + res.status);
-  const data = await res.json();
-  return normalizeBoard(data);
-}
-
-async function putRemoteBoardOnce(board) {
-  const body = JSON.stringify({
-    orders: board.orders || [],
-    updatedAt: board.updatedAt || new Date().toISOString(),
-  });
-  const res = await fetchWithTimeout(
-    ORDER_BOARD_URL,
-    {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json;charset=UTF-8',
-        Accept: 'application/json',
-      },
+      method: 'POST',
+      headers: leanHeaders(),
       body: body,
       mode: 'cors',
       credentials: 'omit',
-      cache: 'no-store',
     },
     15000
   );
-  if (!res.ok) throw new Error('写入失败 HTTP ' + res.status);
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error('创建失败 HTTP ' + res.status + ' ' + t.slice(0, 120));
+  }
+  const data = await res.json();
+  return data.objectId;
+}
+
+async function leanUpdateMainRow(objectId, board) {
+  const url = leanBase() + '/1.1/classes/' + BOARD_CLASS + '/' + objectId;
+  const body = JSON.stringify({
+    orders: board.orders || [],
+    updatedAtBoard: board.updatedAt || new Date().toISOString(),
+  });
+  const res = await fetchWithTimeout(
+    url,
+    {
+      method: 'PUT',
+      headers: leanHeaders(),
+      body: body,
+      mode: 'cors',
+      credentials: 'omit',
+    },
+    15000
+  );
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error('更新失败 HTTP ' + res.status + ' ' + t.slice(0, 120));
+  }
+  return true;
+}
+
+async function fetchRemoteBoardOnce() {
+  if (!isCloudConfigured()) throw new Error('未配置国内云');
+  const row = await leanFindMainRow();
+  if (!row) return { orders: [], updatedAt: null, objectId: null };
+  return normalizeBoard(row);
+}
+
+async function putRemoteBoardOnce(board) {
+  if (!isCloudConfigured()) throw new Error('未配置国内云');
+  let objectId = board.objectId;
+  if (!objectId) {
+    const existing = await leanFindMainRow();
+    objectId = existing && existing.objectId;
+  }
+  if (!objectId) {
+    objectId = await leanCreateMainRow(board);
+    board.objectId = objectId;
+    return true;
+  }
+  await leanUpdateMainRow(objectId, board);
+  board.objectId = objectId;
   return true;
 }
 
 async function fetchOrderBoard() {
   const local = readLocalBoard();
+  if (!isCloudConfigured()) {
+    // 未配置云：只返回本机，并标记
+    local._cloud = false;
+    return normalizeBoard(local);
+  }
   let remote = null;
   let remoteErr = null;
-  // 重试 3 次读远程
   for (let i = 0; i < 3; i++) {
     try {
       remote = await fetchRemoteBoardOnce();
@@ -241,18 +346,21 @@ async function fetchOrderBoard() {
       break;
     } catch (e) {
       remoteErr = e;
-      await new Promise(function (r) {
-        setTimeout(r, 300 * (i + 1));
-      });
+      await new Promise((r) => setTimeout(r, 280 * (i + 1)));
     }
   }
   if (remote) {
     const merged = mergeBoards(local, remote);
+    merged.objectId = remote.objectId || local.objectId || null;
+    merged._cloud = true;
     writeLocalBoard(merged);
     return merged;
   }
-  // 远程全失败：退回本地，保证厨房至少能操作本机状态
-  if (local.orders && local.orders.length) return local;
+  if (local.orders && local.orders.length) {
+    local._cloud = false;
+    local._cloudError = String((remoteErr && remoteErr.message) || '云读取失败');
+    return normalizeBoard(local);
+  }
   throw remoteErr || new Error('读取订单板失败');
 }
 
@@ -260,28 +368,34 @@ async function saveOrderBoard(board) {
   const payload = {
     orders: board.orders || [],
     updatedAt: board.updatedAt || new Date().toISOString(),
+    objectId: board.objectId || null,
   };
-  // 先写本地，保证按钮立刻成功
   writeLocalBoard(payload);
+  if (!isCloudConfigured()) {
+    payload._remoteOk = false;
+    payload._cloud = false;
+    return false;
+  }
   let lastErr = null;
   for (let i = 0; i < 4; i++) {
     try {
       await putRemoteBoardOnce(payload);
+      writeLocalBoard(payload);
+      payload._remoteOk = true;
+      payload._cloud = true;
       return true;
     } catch (e) {
       lastErr = e;
-      await new Promise(function (r) {
-        setTimeout(r, 400 * (i + 1));
-      });
+      await new Promise((r) => setTimeout(r, 400 * (i + 1)));
     }
   }
-  // 远程失败不抛死：本地已保存，后台可再刷
-  console.warn('远程同步失败，已保存到本机', lastErr);
+  console.warn('国内云同步失败，已写本机', lastErr);
+  payload._remoteOk = false;
+  payload._cloudError = String((lastErr && lastErr.message) || '同步失败');
   return false;
 }
 
 async function mutateBoard(mutator) {
-  // 读最新（本地+远程合并）→ 改 → 写
   let board;
   try {
     board = await fetchOrderBoard();
@@ -290,8 +404,10 @@ async function mutateBoard(mutator) {
   }
   const next = mutator(normalizeBoard(board));
   next.updatedAt = new Date().toISOString();
+  next.objectId = board.objectId || next.objectId || null;
   const ok = await saveOrderBoard(next);
   next._remoteOk = ok;
+  next._cloud = isCloudConfigured();
   return next;
 }
 
@@ -320,4 +436,20 @@ async function clearDoneKitchenOrders() {
     });
     return board;
   });
+}
+
+/** 测试云连接：读写一条空订单板 */
+async function testCloudConnection() {
+  if (!isCloudConfigured()) throw new Error('请先填写 AppId / AppKey / 服务器地址');
+  const row = await leanFindMainRow();
+  if (!row) {
+    await leanCreateMainRow({ orders: [], updatedAt: new Date().toISOString() });
+  } else {
+    // 轻量 touch
+    await leanUpdateMainRow(row.objectId, {
+      orders: row.orders || [],
+      updatedAt: row.updatedAt || new Date().toISOString(),
+    });
+  }
+  return true;
 }

@@ -12,15 +12,18 @@
 > 不要用 `cdn.jsdmirror.com/.../index.html` 当网址打开——  
 > 镜像会把 HTML 当**纯文本**返回，浏览器会显示源码，不是网页。
 
-图片 / 脚本会自动走国内 CDN（jsdmirror），入口网页用 GitHub Pages 渲染。
+### 国内云同步（LeanCloud 免费，两台手机互通）
+
+1. 打开 [LeanCloud 控制台](https://console.leancloud.cn) 注册，创建**开发版**应用  
+2. 复制 **AppID、AppKey、服务器地址（serverURL）**  
+3. 打开厨房页 → 点 **「配置同步」** → 粘贴三项 → **保存并测试**  
+4. 点 **「生成配置码」**，客厅手机扫码导入同一套配置（或两台都手填）  
+
+配置后：客厅下单 ↔ 厨房自动刷新；「开始做 / 做完了」可正常同步。
+
+也可编辑仓库里的 `board-config.js` 后 `git push`。
 
 菜谱来源：[Anduin2017/HowToCook](https://github.com/Anduin2017/HowToCook)（MIT）
-
-### 极速版优化
-- 首屏轻量菜谱约 80KB；详情按需加载
-- 列表缩略图 + 懒加载
-- 去掉 Tailwind / Google 字体
-- 首屏 24 道，下滑再加载
 
 
 ## 怎么用
