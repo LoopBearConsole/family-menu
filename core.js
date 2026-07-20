@@ -2,7 +2,7 @@
 // 订单板：jsonblob + 本机缓存 + 乐观更新（按钮先变，后台再同步）
 
 // 换图后务必改版本号，并优先走 github.io（CDN 会缓存旧图很久）
-const IMG_VER = 'imgfix24';
+const IMG_VER = 'imgfix25';
 const PAGES_ORIGIN = 'https://loopbearconsole.github.io/family-menu/';
 const REPO_CDN = 'https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/';
 const REPO_CDN2 = 'https://cdn.jsdelivr.net/gh/LoopBearConsole/family-menu@main/';
