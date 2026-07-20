@@ -200,17 +200,20 @@
 
   <div class="toast" id="toast"></div>
   <footer>
-    老刘小炒 · 厨房看板 · 每 5 秒自动同步<br />
+    老刘小炒 · 厨房看板 · 每 3 秒自动同步<br />
     <a href="./">返回客厅点餐页</a>
   </footer>
 
-  <script src="https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/core.js" onerror="this.onerror=null;this.src='core.js'"></script>
-  <script src="https://cdn.jsdmirror.com/gh/LoopBearConsole/family-menu@main/dishes-lite.js" onerror="this.onerror=null;this.src='dishes-lite.js'"></script>
+  <!-- 本站脚本，带版本号，避免 CDN 旧缓存导致按钮失效 -->
+  <script src="core.js?v=board3"></script>
+  <script src="dishes-lite.js?v=board3"></script>
   <script>
     let board = { orders: [], updatedAt: null };
     let filter = 'active';
     let lastSig = '';
     let knownIds = new Set();
+    let pollTimer = null;
+    let refreshing = false;
 
     const statusLabel = { pending: '待做', cooking: '制作中', done: '已完成' };
     const statusClass = { pending: 'st-pending', cooking: 'st-cooking', done: 'st-done' };
@@ -218,11 +221,11 @@
     function showToast(msg) {
       const t = document.getElementById('toast');
       t.innerHTML = '<div>' + msg + '</div>';
-      setTimeout(() => { t.innerHTML = ''; }, 1800);
+      setTimeout(() => { t.innerHTML = ''; }, 2000);
     }
 
     function orderSignature(orders) {
-      return (orders || []).map(o => o.id + ':' + o.status).join('|');
+      return (orders || []).map(o => o.id + ':' + (o.status || '')).join('|');
     }
 
     function filteredOrders() {
@@ -258,12 +261,9 @@
             <span class="st ${statusClass[order.status] || 'st-pending'}">${statusLabel[order.status] || order.status}</span>
           </div>
           ${items.map(item => {
-            const lite = findDishLite(item.id) || {};
-            const hasImg = !!(lite.img || item.id);
+            const lite = (typeof findDishLite === 'function' ? findDishLite(item.id) : null) || {};
             return `<button type="button" class="item" onclick="openDish('${item.id}')">
-              ${hasImg
-                ? `<img src="${imgOf(item.id, true)}" alt="" loading="lazy" onerror="onImgError(this,'${item.id}',true)" />`
-                : `<div class="img-fallback">${(item.name || '?').slice(0,1)}</div>`}
+              <img src="${imgOf(item.id, true)}" alt="" loading="eager" onerror="onImgError(this,'${item.id}',true)" />
               <div class="meta">
                 <div class="name">${item.name || lite.name || item.id} <span style="color:#059669">×${item.qty || 1}</span></div>
                 <div class="sub">${lite.tagline || '点开看制作步骤'} · 约 ${lite.time || item.time || '?'} 分钟</div>
@@ -282,6 +282,8 @@
     }
 
     async function refreshBoard(manual) {
+      if (refreshing && !manual) return;
+      refreshing = true;
       const label = document.getElementById('syncLabel');
       try {
         if (manual) label.textContent = '刷新中…';
@@ -289,6 +291,7 @@
         const sig = orderSignature(data.orders);
         const incoming = (data.orders || []).map(o => o.id);
         const brandNew = incoming.filter(id => lastSig && !knownIds.has(id));
+        const statusChanged = lastSig && sig !== lastSig;
         board = data;
         lastSig = sig;
         knownIds = new Set(incoming);
@@ -298,35 +301,83 @@
         if (brandNew.length) {
           showToast('有新订单！');
           if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
-        } else if (manual) showToast('已刷新');
+        } else if (manual) {
+          showToast(statusChanged ? '已刷新' : '已是最新');
+        }
       } catch (e) {
         console.error(e);
-        label.textContent = '同步失败，重试中';
-        if (manual) showToast('同步失败，请检查网络');
+        // 远程失败时尝试展示本地缓存，避免空白
+        try {
+          if (typeof readLocalBoard === 'function') {
+            const local = readLocalBoard();
+            if (local && local.orders && local.orders.length) {
+              board = local;
+              render();
+            }
+          }
+        } catch (e2) {}
+        label.textContent = '网络不稳，自动重试中';
+        if (manual) showToast('同步失败，请再点刷新');
+      } finally {
+        refreshing = false;
       }
     }
 
     async function setStatus(orderId, status) {
+      // 乐观更新：先改界面，再后台同步
+      const prev = board;
       try {
-        board = await updateKitchenOrderStatus(orderId, status);
+        board = {
+          orders: (board.orders || []).map(function (o) {
+            return o.id === orderId ? Object.assign({}, o, { status: status }) : o;
+          }),
+          updatedAt: new Date().toISOString(),
+        };
         lastSig = orderSignature(board.orders);
         render();
         showToast(statusLabel[status] || '已更新');
+
+        const remote = await updateKitchenOrderStatus(orderId, status);
+        board = remote;
+        lastSig = orderSignature(board.orders);
+        if (remote && remote._remoteOk === false) {
+          showToast('已改状态，云端稍后再同步');
+        }
+        render();
       } catch (e) {
-        showToast('更新失败');
+        console.error(e);
+        // 即使远程失败，本地已改；尝试写本地
+        try {
+          if (typeof writeLocalBoard === 'function') writeLocalBoard(board);
+        } catch (e2) {}
+        showToast('已改状态（离线缓存），网络恢复后自动同步');
       }
     }
 
     async function clearDone() {
       try {
+        board = {
+          orders: (board.orders || []).filter(function (o) { return o.status !== 'done'; }),
+          updatedAt: new Date().toISOString(),
+        };
+        render();
         board = await clearDoneKitchenOrders();
         lastSig = orderSignature(board.orders);
         knownIds = new Set((board.orders || []).map(o => o.id));
         render();
         showToast('已清理完成订单');
       } catch (e) {
-        showToast('清理失败');
+        showToast('清理失败，请重试');
       }
+    }
+
+    function startPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(function () {
+        // 页面在前台才刷，省流量也更稳
+        if (document.hidden) return;
+        refreshBoard(false);
+      }, 3000);
     }
 
     async function openDish(id) {
@@ -384,8 +435,15 @@
       if (e.key === 'Escape') closeDetailDirect();
     });
 
-    refreshBoard();
-    setInterval(() => refreshBoard(false), 5000);
+    // 进入立刻刷；每 3 秒自动刷；回到前台再刷
+    refreshBoard(true);
+    startPolling();
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) refreshBoard(false);
+    });
+    window.addEventListener('focus', function () {
+      refreshBoard(false);
+    });
   </script>
 </body>
 </html>
